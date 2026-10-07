@@ -141,6 +141,11 @@ select option{background:#12141d;color:#fff}
 .sw button{padding:14px 8px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--plat);font:600 .68rem 'Montserrat',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:.2s}
 .sw button.active{background:var(--chrome);color:#0b0c10;border-color:#fff;box-shadow:0 0 20px rgba(255,255,255,.3)}
 .sw button.close{grid-column:1/-1}
+.tab-visibility{display:grid;gap:10px}
+.tab-visibility-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.04);font-size:.78rem}
+.tab-visibility .tg{padding:0}
+.tab-visibility .tg:focus-visible{outline:2px solid var(--plat);outline-offset:3px}
+.tab-visibility .tg:disabled{opacity:.55;cursor:wait}
 .podium-admin{display:flex;flex-direction:column;gap:8px}
 .pod-adm{display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.04)}
 .pod-adm .m{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font:700 .95rem 'Cinzel',serif;background:var(--chrome);color:#0b0c10}
@@ -320,28 +325,17 @@ footer{text-align:center;margin-top:34px}
       <p id="regDoneTxt"></p>
       <button class="btn ghost" id="regAgain" type="button">Inscribir a otra candidata</button>
     </div>
-
-    <h2 class="sec-title silver-text">Backstage</h2>
-    <p class="sec-sub">Prepárate frente al espejo</p>
-    <div class="mirror">
-      <div class="mirror-in">
-        <div class="ratio">
-          <iframe src="https://www.youtube-nocookie.com/embed/Pj1N2u0Vj_g" title="Masterclass de Pasarela" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
-        </div>
-        <div class="cap silver-text">Masterclass de Pasarela</div>
-      </div>
-    </div>
   </section>
 
   <!-- TAB 2: CANDIDATAS -->
-  <section class="tab" id="tab-candidatas">
+  <section class="tab" id="tab-candidatas" hidden>
     <h2 class="sec-title silver-text">Candidatas</h2>
     <p class="sec-sub" id="candCount">Ordenadas por delegación</p>
     <div class="grid" id="candGrid"></div>
   </section>
 
   <!-- TAB 3: GALA -->
-  <section class="tab" id="tab-gala">
+  <section class="tab" id="tab-gala" hidden>
     <h2 class="sec-title silver-text">La Gala</h2>
     <p class="sec-sub">Toca cada bloque para ver más detalles</p>
     <div class="timeline">
@@ -361,13 +355,13 @@ footer{text-align:center;margin-top:34px}
   </section>
 
   <!-- TAB 4: URNA -->
-  <section class="tab" id="tab-urna">
+  <section class="tab" id="tab-urna" hidden>
     <h2 class="sec-title silver-text">La Urna</h2>
     <div id="urnaBox"></div>
   </section>
 
   <!-- TAB 5: PREMIOS & CUADRO DE HONOR -->
-  <section class="tab" id="tab-premios">
+  <section class="tab" id="tab-premios" hidden>
     <h2 class="sec-title silver-text">Premios &amp; Cuadro de Honor</h2>
     <div class="banner" id="banner" hidden>✦ Los resultados se revelarán durante la gala ✦</div>
     <div class="adminbar" id="adminBar" hidden>
@@ -394,6 +388,12 @@ footer{text-align:center;margin-top:34px}
     </div>
 
     <div id="adminPanel" hidden>
+      <div class="glass">
+        <h3 style="font-size:.95rem;letter-spacing:.14em;margin-bottom:6px">Visibilidad de pestañas</h3>
+        <p class="sec-sub" style="text-align:left">Activa las pestañas que quieras mostrar. Ficha siempre está visible.</p>
+        <div class="tab-visibility" id="adminTabVisibility"></div>
+      </div>
+
       <div class="glass">
         <h3 style="font-size:.95rem;letter-spacing:.14em;margin-bottom:12px">Interruptor de votación</h3>
         <div class="sw" id="adminSwitch"></div>
@@ -431,10 +431,10 @@ footer{text-align:center;margin-top:34px}
 
 <nav class="bottom-nav" id="nav">
   <button class="nav-btn active" data-tab="ficha"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="11" r="2.2"/><path d="M6 16c.6-1.6 2-2.4 3-2.4s2.4.8 3 2.4M14.5 10h4M14.5 13.5h3"/></svg>Ficha</button>
-  <button class="nav-btn" data-tab="candidatas"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c.7-3.4 3.2-5.2 6-5.2s5.3 1.8 6 5.2"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14.4c2.3.1 4 1.5 4.5 4.1"/></svg>Candidatas</button>
-  <button class="nav-btn" data-tab="gala"><svg viewBox="0 0 24 24"><path d="M12 3l2.3 5.7L20 11l-5.7 2.3L12 19l-2.3-5.7L4 11l5.7-2.3z"/><path d="M19 3v3M17.5 4.5h3"/></svg>Gala</button>
-  <button class="nav-btn" data-tab="urna"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7l4-3 4 3v3M9.5 15l2 2 3.5-4"/></svg>Urna</button>
-  <button class="nav-btn" data-tab="premios"><svg viewBox="0 0 24 24"><path d="M12 3l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5-3.6-3.5 5-.7z"/></svg>Premios</button>
+  <button class="nav-btn" data-tab="candidatas" hidden><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c.7-3.4 3.2-5.2 6-5.2s5.3 1.8 6 5.2"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14.4c2.3.1 4 1.5 4.5 4.1"/></svg>Candidatas</button>
+  <button class="nav-btn" data-tab="gala" hidden><svg viewBox="0 0 24 24"><path d="M12 3l2.3 5.7L20 11l-5.7 2.3L12 19l-2.3-5.7L4 11l5.7-2.3z"/><path d="M19 3v3M17.5 4.5h3"/></svg>Gala</button>
+  <button class="nav-btn" data-tab="urna" hidden><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7l4-3 4 3v3M9.5 15l2 2 3.5-4"/></svg>Urna</button>
+  <button class="nav-btn" data-tab="premios" hidden><svg viewBox="0 0 24 24"><path d="M12 3l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5-3.6-3.5 5-.7z"/></svg>Premios</button>
 </nav>
 <div class="toast" id="toast"></div>
 
@@ -575,6 +575,13 @@ const epoch  = () => (DATA.config && DATA.config.epoch) || 0;
 const published = () => !!(DATA.config && DATA.config.published);
 const isAdmin = () => sessionStorage.getItem('mg_admin') === '1';
 const winnerOf = key => { const id = DATA.awards && DATA.awards[key]; return id && DATA.candidates ? DATA.candidates[id] : null; };
+const PUBLIC_TABS = [
+  {id:'candidatas', label:'Candidatas'},
+  {id:'gala', label:'Gala'},
+  {id:'urna', label:'Urna'},
+  {id:'premios', label:'Premios'}
+];
+const isTabVisible = id => !!(DATA.config && DATA.config.visibleTabs && DATA.config.visibleTabs[id]);
 
 const sigs = {};
 function renderIf(key, sig, fn, force){ if(!force && sigs[key] === sig) return; sigs[key] = sig; fn(); }
@@ -597,12 +604,25 @@ function setStatus(ok){
    NAVEGACIÓN
    ========================================================= */
 function show(t){
+  if (PUBLIC_TABS.some(tab => tab.id === t) && !isTabVisible(t)) t = 'ficha';
   $$('.tab').forEach(s => s.classList.toggle('active', s.id === 'tab-' + t));
   $$('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
   window.scrollTo({top:0, behavior:'smooth'});
   if (t === 'admin') renderAdmin(true);
   if (t === 'gala') revealTimeline();
   if (t === 'premios') renderPremios(true);
+}
+function applyTabVisibility(){
+  let hasVisibleTab = false;
+  PUBLIC_TABS.forEach(({id}) => {
+    const visible = isTabVisible(id);
+    hasVisibleTab = hasVisibleTab || visible;
+    $('#tab-' + id).hidden = !visible;
+    $(`.nav-btn[data-tab="${id}"]`).hidden = !visible;
+  });
+  $('#nav').hidden = !hasVisibleTab;
+  const activeTab = $('.tab.active');
+  if (activeTab && activeTab.id !== 'tab-admin' && activeTab.id !== 'tab-ficha' && activeTab.hidden) show('ficha');
 }
 $$('.nav-btn').forEach(b => b.addEventListener('click', () => show(b.dataset.tab)));
 $('#adminLink').addEventListener('click', () => show('admin'));
@@ -900,9 +920,32 @@ function renderAdmin(force){
   const ok = isAdmin();
   $('#adminGate').hidden = ok; $('#adminPanel').hidden = !ok;
   if (!ok) return;
+  renderIf('adm-tabs', JSON.stringify(PUBLIC_TABS.map(({id}) => [id, isTabVisible(id)])), drawTabVisibility, force);
   renderIf('adm-sw', vstate(), drawSwitch, force);
   renderIf('adm-ph', cSig(), drawPhotocall, force);
   renderIf('adm-rs', cands().map(c => c.id + c.name).join() + JSON.stringify(DATA.votes || {}), drawResults, force);
+}
+
+function drawTabVisibility(){
+  $('#adminTabVisibility').innerHTML = PUBLIC_TABS.map(({id, label}) => {
+    const visible = isTabVisible(id);
+    return `<div class="tab-visibility-row"><span>${label}</span>
+      <button class="tg ${visible ? 'on' : ''}" type="button" role="switch" aria-label="Mostrar pestaña ${label}" aria-checked="${visible}" data-visible-tab="${id}"></button></div>`;
+  }).join('');
+  $$('#adminTabVisibility button[data-visible-tab]').forEach(button => button.addEventListener('click', async () => {
+    const {visibleTab} = button.dataset;
+    const visible = button.getAttribute('aria-checked') !== 'true';
+    button.disabled = true;
+    try{
+      await DB.set('/config/visibleTabs/' + visibleTab, visible);
+      await sync(true);
+      toast(visible ? 'Pestaña activada' : 'Pestaña ocultada');
+    }catch(e){
+      toast('No se pudo cambiar la visibilidad');
+    }finally{
+      button.disabled = false;
+    }
+  }));
 }
 
 function drawSwitch(){
@@ -1005,6 +1048,7 @@ $('#resetVotes').addEventListener('click', async () => {
    ARRANQUE
    ========================================================= */
 function renderAll(){
+  applyTabVisibility();
   renderIf('cands', cSig(), drawCands);
   renderUrna();
   renderAdmin();
