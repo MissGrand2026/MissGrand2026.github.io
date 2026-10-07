@@ -442,13 +442,12 @@ footer{text-align:center;margin-top:34px}
 /* =========================================================
    CONFIGURACIÓN
    BACKEND: 'local'    -> demo en un solo dispositivo (localStorage)
-            'firebase' -> tiempo real entre todos los móviles
-   Para Firebase: crea un proyecto, activa "Realtime Database",
-   copia su URL aquí y pon reglas de lectura/escritura del nodo.
+            'supabase' -> datos compartidos entre todos los móviles
    ========================================================= */
 const CONFIG = {
-  BACKEND: 'local',
-  FIREBASE_DB_URL: '',          // ej: 'https://tu-proyecto-default-rtdb.europe-west1.firebasedatabase.app'
+  BACKEND: 'supabase',
+  SUPABASE_URL: 'https://xkzsbrgtknppxqvrjtkg.supabase.co',
+  SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhrenNicmd0a25wcHhxdnJqdGtnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwODU1NTgsImV4cCI6MjEwNTY2MTU1OH0.d81fcmWdf0tQpnMJfe5Mg9A3dBMhtBAJuGZB4d-b8Vs',             // Pega aquí la clave anon public
   ROOT: 'missgrand2026',
   POLL_MS: 3000,
   ADMIN_PASSWORD: 'missgrand32',
@@ -535,11 +534,16 @@ const crown = (s=64) => `<svg class="crown" width="${s}" height="${s}" viewBox="
   <circle cx="32" cy="34" r="3" fill="#0b0c10" opacity=".45"/><circle cx="20" cy="38" r="2" fill="#0b0c10" opacity=".35"/><circle cx="44" cy="38" r="2" fill="#0b0c10" opacity=".35"/></svg>`;
 const silhouette = `<svg class="sil" viewBox="0 0 100 100" fill="#e0e6ed"><circle cx="50" cy="32" r="18"/><path d="M10 100c2-28 18-40 40-40s38 12 40 40z"/></svg>`;
 
-/* ---------- Capa de datos (local / Firebase REST) ---------- */
+/* ---------- Capa de datos (local / Supabase REST) ---------- */
 const DB = (() => {
-  const isFB = CONFIG.BACKEND === 'firebase' && CONFIG.FIREBASE_DB_URL;
+  const live = CONFIG.BACKEND === 'supabase';
   const LS = 'mg_db_' + CONFIG.ROOT;
-  const url = p => CONFIG.FIREBASE_DB_URL.replace(/\/$/,'') + '/' + CONFIG.ROOT + p + '.json';
+  const T = CONFIG.SUPABASE_URL.replace(/\/$/,'') + '/rest/v1/kv';
+  const H = {
+    apikey: CONFIG.SUPABASE_KEY,
+    Authorization: 'Bearer ' + CONFIG.SUPABASE_KEY,
+    'Content-Type': 'application/json'
+  };
   const lsRead = () => { try { return JSON.parse(localStorage.getItem(LS)) || {}; } catch { return {}; } };
   function setPath(obj, path, val){
     const k = path.split('/').filter(Boolean);
@@ -549,14 +553,29 @@ const DB = (() => {
     if (val === null) delete o[last]; else o[last] = val;
   }
   return {
-    isFB,
+    live,
     async read(){
-      if (isFB){ const r = await fetch(url(''), {cache:'no-store'}); if(!r.ok) throw new Error('read'); return (await r.json()) || {}; }
+      if (live){
+        if (!CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_KEY) throw new Error('Supabase no configurado');
+        const r = await fetch(T + '?select=path,value', {headers:H, cache:'no-store'});
+        if(!r.ok) throw new Error('read');
+        const rows = await r.json();
+        rows.sort((a,b) => a.path.split('/').length - b.path.split('/').length);
+        const tree = {}; rows.forEach(row => setPath(tree, row.path, row.value));
+        return tree;
+      }
       return lsRead();
     },
     async set(path, val){
-      if (isFB){
-        const r = await fetch(url(path), val === null ? {method:'DELETE'} : {method:'PUT', body: JSON.stringify(val)});
+      if (live){
+        if (!CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_KEY) throw new Error('Supabase no configurado');
+        const r = val === null
+          ? await fetch(T + '?' + new URLSearchParams({or:`(path.eq.${path},path.like.${path}/*)`}), {method:'DELETE', headers:H})
+          : await fetch(T + '?on_conflict=path', {
+            method:'POST',
+            headers:{...H, Prefer:'resolution=merge-duplicates'},
+            body:JSON.stringify({path, value:val})
+          });
         if(!r.ok) throw new Error('write');
       } else {
         const o = lsRead(); setPath(o, path, val);
@@ -596,8 +615,8 @@ async function sync(force){
 }
 function setStatus(ok){
   const s = $('#status');
-  s.className = 'status ' + (!ok ? 'off' : DB.isFB ? '' : 'local');
-  $('#statusTxt').textContent = !ok ? 'Sin conexión' : DB.isFB ? 'En vivo' : 'Modo demo (local)';
+  s.className = 'status ' + (!ok ? 'off' : DB.live ? '' : 'local');
+  $('#statusTxt').textContent = !ok ? 'Sin conexión' : DB.live ? 'En vivo' : 'Modo demo (local)';
 }
 
 /* =========================================================
