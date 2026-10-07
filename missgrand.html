@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0c10">
+<title>MISS GRAND 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0c10; --bg2:#12141d; --silver:#c0c0c0; --plat:#e0e6ed; --white:#ffffff; --steel:#a1a8b3;
+  --chrome:linear-gradient(135deg,#ffffff 0%,#e0e6ed 18%,#a1a8b3 42%,#f4f6f9 58%,#c0c0c0 78%,#8b929e 100%);
+  --gold:linear-gradient(135deg,#fff8dc 0%,#f5d98a 30%,#c9a24a 55%,#fff1bd 75%,#b98a2e 100%);
+  --fire:linear-gradient(135deg,#fff1bd 0%,#ffb347 35%,#ff6a3d 65%,#ffd27a 100%);
+  --glass:rgba(22,25,36,.55); --line:rgba(224,230,237,.18); --ok:#5ee6a0;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{margin:0;background:var(--bg);color:var(--plat);font-family:'Montserrat',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+body{min-height:100dvh;background:radial-gradient(1200px 600px at 50% -10%,#1d2132 0%,transparent 60%),linear-gradient(180deg,var(--bg2),var(--bg));padding-top:env(safe-area-inset-top)}
+.stars{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.7;
+  background:
+   radial-gradient(1.5px 1.5px at 12% 18%,#fff,transparent),radial-gradient(1px 1px at 78% 12%,#e0e6ed,transparent),
+   radial-gradient(1.5px 1.5px at 34% 62%,#fff,transparent),radial-gradient(1px 1px at 88% 48%,#c0c0c0,transparent),
+   radial-gradient(1.5px 1.5px at 60% 82%,#fff,transparent),radial-gradient(1px 1px at 8% 90%,#e0e6ed,transparent),
+   radial-gradient(1px 1px at 92% 88%,#fff,transparent);
+  animation:twinkle 5s ease-in-out infinite alternate}
+@keyframes twinkle{from{opacity:.35}to{opacity:.9}}
+#app{position:relative;z-index:1;max-width:520px;margin:0 auto;padding:18px 16px 140px}
+.silver-text{background:var(--chrome);-webkit-background-clip:text;background-clip:text;color:transparent}
+.gold-text{background:var(--gold);-webkit-background-clip:text;background-clip:text;color:transparent}
+h1,h2,h3,h4{font-family:'Cinzel',serif;margin:0}
+header.brand{text-align:center;padding:14px 0 6px}
+header.brand h1{font-size:2.3rem;font-weight:900;letter-spacing:.14em;filter:drop-shadow(0 0 14px rgba(224,230,237,.35))}
+header.brand .year{font-family:'Cinzel',serif;letter-spacing:.6em;color:var(--steel);font-size:.9rem;margin-top:2px}
+header.brand .tag{font-size:.68rem;letter-spacing:.3em;text-transform:uppercase;color:var(--steel);margin-top:8px}
+.status{display:inline-flex;align-items:center;gap:6px;margin-top:10px;font-size:.65rem;letter-spacing:.12em;color:var(--steel);border:1px solid var(--line);border-radius:99px;padding:4px 10px;background:rgba(255,255,255,.03)}
+.status i{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.status.off i{background:#ff7a7a;box-shadow:0 0 8px #ff7a7a}
+.status.local i{background:#ffd27a;box-shadow:0 0 8px #ffd27a}
+
+.tab{display:none}
+.tab.active{display:block;animation:rise .45s ease}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+.glass{background:var(--glass);border:1px solid var(--line);border-radius:20px;padding:18px;margin:16px 0;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 8px 30px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.08)}
+.sec-title{font-size:1.15rem;letter-spacing:.18em;text-transform:uppercase;text-align:center;margin:26px 0 4px}
+.sec-sub{text-align:center;color:var(--steel);font-size:.78rem;margin:0 0 14px}
+
+/* Countdown */
+.cd-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.cd-box{text-align:center;padding:12px 4px;border-radius:14px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.01))}
+.cd-box b{display:block;font-family:'Cinzel',serif;font-size:1.7rem;font-weight:700;font-variant-numeric:tabular-nums;background:var(--chrome);-webkit-background-clip:text;background-clip:text;color:transparent}
+.cd-box small{font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--steel)}
+.cd-label{text-align:center;font-size:.7rem;letter-spacing:.25em;text-transform:uppercase;color:var(--steel);margin-bottom:12px}
+.cd-live{text-align:center;font-family:'Cinzel',serif;font-size:1.3rem;padding:10px}
+
+/* Forms */
+label.f{display:block;font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--steel);margin:14px 0 6px}
+input[type=text],select{width:100%;padding:14px;border-radius:12px;border:1px solid var(--line);background:rgba(8,9,14,.7);color:var(--white);font:inherit;font-size:.95rem;outline:none;transition:.25s}
+input[type=text]:focus,select:focus{border-color:var(--silver);box-shadow:0 0 0 3px rgba(224,230,237,.12),0 0 18px rgba(224,230,237,.15)}
+select option{background:#12141d;color:#fff}
+.btn{position:relative;overflow:hidden;width:100%;margin-top:20px;padding:15px;border:0;border-radius:14px;cursor:pointer;font:600 .85rem 'Montserrat',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#0b0c10;background:var(--chrome);box-shadow:0 6px 22px rgba(224,230,237,.22),inset 0 1px 0 #fff;transition:transform .15s,box-shadow .25s}
+.btn::after{content:"";position:absolute;top:0;left:-70%;width:45%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.85),transparent);transform:skewX(-20deg);transition:left .6s}
+.btn:hover::after,.btn:active::after{left:130%}
+.btn:hover{box-shadow:0 8px 30px rgba(255,255,255,.35),inset 0 1px 0 #fff}
+.btn:active{transform:scale(.975)}
+.btn:disabled{opacity:.5;pointer-events:none}
+.btn.ghost{background:transparent;color:var(--plat);border:1px solid var(--line);box-shadow:none;margin-top:12px}
+.btn.sm{width:auto;margin:0;padding:10px 14px;font-size:.68rem}
+.done{text-align:center}
+.done .seal{width:64px;height:64px;margin:0 auto 10px;border-radius:50%;display:grid;place-items:center;background:var(--chrome);color:#0b0c10;font-size:1.8rem;box-shadow:0 0 30px rgba(255,255,255,.3)}
+.done h3{font-size:1.2rem;letter-spacing:.14em;text-transform:uppercase}
+.done p{color:var(--steel);font-size:.85rem;margin:6px 0 0}
+
+/* Mirror + video */
+.mirror{padding:20px;border-radius:24px;background:radial-gradient(circle,#fff 0 3px,rgba(255,255,255,.25) 4px,transparent 6px) 0 0/24px 24px;border:2px solid transparent;
+  background-clip:padding-box;position:relative;animation:bulbs 2.6s ease-in-out infinite alternate;box-shadow:0 0 40px rgba(224,230,237,.2)}
+.mirror::before{content:"";position:absolute;inset:-2px;border-radius:26px;background:var(--chrome);z-index:-1}
+.mirror-in{border-radius:12px;overflow:hidden;background:#000;border:1px solid rgba(255,255,255,.25);box-shadow:inset 0 0 30px rgba(224,230,237,.15)}
+.mirror-in .cap{padding:10px 12px;font-family:'Cinzel',serif;letter-spacing:.14em;font-size:.85rem;text-align:center;background:linear-gradient(180deg,#171a26,#0e1018)}
+.ratio{position:relative;aspect-ratio:16/9}
+.ratio iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+@keyframes bulbs{from{filter:brightness(.85)}to{filter:brightness(1.25)}}
+
+/* Candidates */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cand{border:1px solid rgba(192,192,192,.35);border-radius:18px;overflow:hidden;background:var(--glass);box-shadow:0 6px 20px rgba(0,0,0,.4);animation:rise .5s ease both}
+.cand .ph{position:relative;aspect-ratio:3/4;background:linear-gradient(160deg,#1a1d2b,#0d0f17);display:grid;place-items:center;overflow:hidden}
+.cand .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.cand .ph .sil{position:absolute;bottom:-8%;left:50%;transform:translateX(-50%);width:80%;opacity:.12}
+.cand .info{padding:10px 10px 12px;text-align:center}
+.cand .info b{display:block;font-family:'Cinzel',serif;font-size:.95rem;line-height:1.15;color:var(--white)}
+.cand .info small{display:block;margin-top:4px;font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--steel)}
+.crown{animation:breathe 3s ease-in-out infinite;filter:drop-shadow(0 0 10px rgba(224,230,237,.5))}
+@keyframes breathe{0%,100%{transform:scale(.92);opacity:.6}50%{transform:scale(1.08);opacity:1}}
+.empty{text-align:center;color:var(--steel);padding:40px 10px;font-size:.9rem;grid-column:1/-1}
+
+/* Timeline */
+.timeline{position:relative;padding-left:46px;margin-top:20px}
+.timeline::before{content:"";position:absolute;left:17px;top:6px;bottom:6px;width:3px;border-radius:3px;background:linear-gradient(180deg,transparent,#e0e6ed 10%,#8b929e 50%,#e0e6ed 90%,transparent);box-shadow:0 0 12px rgba(224,230,237,.4)}
+.tl-item{position:relative;margin-bottom:18px;opacity:0;transform:translateY(20px);transition:.6s}
+.tl-item.in{opacity:1;transform:none}
+.node{position:absolute;left:-46px;top:14px;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font:700 .95rem 'Cinzel',serif;color:#0b0c10;background:var(--chrome);box-shadow:0 0 0 4px var(--bg),0 0 18px rgba(255,255,255,.45)}
+.tl-item .glass{margin:0;cursor:pointer}
+.tl-item small{font-size:.62rem;letter-spacing:.25em;color:var(--steel)}
+.tl-item h3{font-size:1.05rem;margin:4px 0 6px;letter-spacing:.06em}
+.tl-item p{margin:0;font-size:.84rem;line-height:1.5;color:#c9d0da}
+.tl-item .more{max-height:0;overflow:hidden;transition:max-height .4s ease;color:var(--steel);font-size:.78rem}
+.tl-item.open .more{max-height:120px;margin-top:10px}
+
+/* Urna */
+.lock{text-align:center;padding:30px 10px}
+.lock svg{filter:drop-shadow(0 0 18px rgba(224,230,237,.45));animation:glowp 3s ease-in-out infinite}
+.lock .shackle{transform-origin:30px 62px;animation:sway 4s ease-in-out infinite}
+@keyframes sway{0%,100%{transform:rotate(0)}50%{transform:rotate(-5deg)}}
+@keyframes glowp{50%{filter:drop-shadow(0 0 30px rgba(255,255,255,.7))}}
+.lock p{font-family:'Cinzel',serif;letter-spacing:.06em;line-height:1.5;margin:18px 0 0;font-size:1rem}
+.cat{margin:12px 0;padding:16px}
+.cat.special{border-color:#fff;box-shadow:0 0 26px rgba(255,255,255,.25),inset 0 0 20px rgba(255,255,255,.05)}
+.cat h4{margin:0 0 4px;font-family:'Cinzel',serif;letter-spacing:.1em;font-size:.95rem}
+.cat .q{margin:0 0 10px;font-size:.82rem;color:#c9d0da;line-height:1.45}
+.cat .tagsp{display:inline-block;font-size:.6rem;letter-spacing:.2em;padding:3px 8px;border-radius:99px;background:var(--chrome);color:#0b0c10;font-weight:700;margin-bottom:8px}
+.blockpill{display:inline-block;padding:6px 14px;border-radius:99px;border:1px solid var(--silver);font-size:.7rem;letter-spacing:.18em;text-transform:uppercase}
+.voted{text-align:center;padding:30px 14px;border-color:rgba(94,230,160,.5);box-shadow:0 0 30px rgba(94,230,160,.15)}
+.voted .badge{display:inline-flex;align-items:center;gap:10px;padding:12px 20px;border-radius:99px;font-weight:600;letter-spacing:.06em;color:#eafff4;background:linear-gradient(135deg,rgba(94,230,160,.25),rgba(224,230,237,.18));border:1px solid var(--ok);box-shadow:0 0 22px rgba(94,230,160,.3)}
+
+/* Admin */
+.pc-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.pc-row:last-child{border:0}
+.pc-thumb{width:46px;height:60px;border-radius:8px;overflow:hidden;background:#0d0f17;border:1px solid var(--line);display:grid;place-items:center;flex:none}
+.pc-thumb img{width:100%;height:100%;object-fit:cover}
+.pc-info{flex:1;min-width:0}
+.pc-info b{display:block;font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-info small{color:var(--steel);font-size:.68rem}
+.mini{border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--plat);border-radius:10px;padding:8px 10px;font:600 .62rem 'Montserrat',sans-serif;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+.mini.danger{color:#ff9a9a;border-color:rgba(255,122,122,.4)}
+.sw{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sw button{padding:14px 8px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--plat);font:600 .68rem 'Montserrat',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:.2s}
+.sw button.active{background:var(--chrome);color:#0b0c10;border-color:#fff;box-shadow:0 0 20px rgba(255,255,255,.3)}
+.sw button.close{grid-column:1/-1}
+.podium-admin{display:flex;flex-direction:column;gap:8px}
+.pod-adm{display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.04)}
+.pod-adm .m{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font:700 .95rem 'Cinzel',serif;background:var(--chrome);color:#0b0c10}
+.pod-adm:nth-child(1){border-color:#fff;box-shadow:0 0 22px rgba(255,255,255,.25)}
+.pod-adm .n{flex:1;min-width:0}.pod-adm .n b{display:block;font-size:.9rem}.pod-adm .n small{color:var(--steel);font-size:.65rem}
+.pod-adm .p{font:700 1.3rem 'Cinzel',serif}
+table.res{width:100%;border-collapse:collapse;font-size:.75rem;margin-top:8px}
+table.res th{color:var(--steel);font-weight:500;letter-spacing:.1em;text-transform:uppercase;font-size:.58rem;text-align:center;padding:6px 2px}
+table.res th:first-child,table.res td:first-child{text-align:left}
+table.res td{padding:8px 2px;border-top:1px solid var(--line);text-align:center}
+details.dr{border:1px solid var(--line);border-radius:12px;margin:8px 0;padding:0 12px;background:rgba(255,255,255,.03)}
+details.dr summary{cursor:pointer;padding:12px 0;font-size:.78rem;letter-spacing:.08em;list-style:none}
+details.dr summary::-webkit-details-marker{display:none}
+details.dr summary::after{content:"＋";float:right;color:var(--steel)}
+details.dr[open] summary::after{content:"－"}
+details.dr ol{margin:0 0 12px;padding-left:20px;font-size:.8rem;line-height:1.55;color:#c9d0da}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.chip{font-size:.68rem;padding:4px 9px;border-radius:99px;border:1px solid var(--line);background:rgba(255,255,255,.05)}
+.cat-t{font-size:.72rem;color:var(--steel);margin:8px 0 6px;letter-spacing:.05em}
+
+/* ===== Premios & Cuadro de Honor ===== */
+.banner{margin:0 0 16px;padding:14px;text-align:center;border-radius:16px;border:1px solid var(--line);background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);font-size:.8rem;color:var(--steel);letter-spacing:.04em}
+.adminbar{position:relative;margin:0 0 6px;padding:14px;border-radius:18px;background:rgba(18,20,29,.72);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(224,230,237,.3);box-shadow:0 8px 30px rgba(0,0,0,.5)}
+.adminbar .row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.adminbar b{font-size:.7rem;letter-spacing:.14em;text-transform:uppercase}
+.adminbar small{display:block;color:var(--steel);font-size:.62rem;margin-top:2px}
+.tg{position:relative;width:58px;height:32px;flex:none;border-radius:99px;border:1px solid var(--line);background:#0b0c10;cursor:pointer;transition:.3s}
+.tg::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:var(--steel);transition:.3s}
+.tg.on{background:rgba(94,230,160,.2);border-color:var(--ok);box-shadow:0 0 16px rgba(94,230,160,.3)}
+.tg.on::after{left:29px;background:var(--chrome)}
+.adminbar .tools{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+
+.block{margin-top:34px}
+.block-head{text-align:center;margin-bottom:14px}
+.block-head small{display:block;font-size:.62rem;letter-spacing:.35em;color:var(--steel);text-transform:uppercase}
+.block-head h2{font-size:1.15rem;letter-spacing:.14em;text-transform:uppercase;margin-top:6px}
+.block-head .rule{width:120px;height:2px;margin:12px auto 0;background:linear-gradient(90deg,transparent,#e0e6ed,transparent);box-shadow:0 0 12px rgba(224,230,237,.5)}
+
+.rv{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s ease}
+.rv.in{opacity:1;transform:none}
+
+.award{position:relative;border-radius:20px;border:1px solid var(--line);background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 8px 28px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.08);transition:transform .3s,box-shadow .3s,border-color .3s}
+.award:hover,.award:active{transform:translateY(-4px);border-color:rgba(255,255,255,.55);box-shadow:0 14px 36px rgba(0,0,0,.55),0 0 28px rgba(224,230,237,.25)}
+.award .thumb{position:relative;overflow:hidden;background:linear-gradient(160deg,#1a1d2b,#0d0f17);display:grid;place-items:center}
+.award .thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.award .thumb .sil{position:absolute;bottom:-8%;left:50%;transform:translateX(-50%);width:80%;opacity:.12}
+.award .who b{display:block;font-family:'Cinzel',serif;color:var(--white)}
+.award .who small{display:block;margin-top:3px;font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--steel)}
+.award.pending .who b{letter-spacing:.3em;color:var(--steel)}
+.draft-tag{position:absolute;top:8px;right:8px;z-index:3;font-size:.5rem;letter-spacing:.16em;text-transform:uppercase;padding:3px 7px;border-radius:99px;background:rgba(255,210,122,.15);border:1px solid #ffd27a;color:#ffd27a}
+.award select{width:100%;margin-top:10px;padding:10px;border-radius:10px;border:1px dashed rgba(224,230,237,.4);background:rgba(8,9,14,.75);color:#fff;font:500 .72rem 'Montserrat',sans-serif}
+.award select option{background:#12141d}
+
+.mini-card{display:flex;gap:12px;align-items:center;padding:10px;margin-bottom:10px}
+.mini-card .thumb{width:62px;height:78px;border-radius:12px;flex:none;border:1px solid rgba(192,192,192,.35)}
+.mini-card .txt{flex:1;min-width:0}
+.mini-card .kind{font-size:.56rem;letter-spacing:.2em;text-transform:uppercase;color:var(--steel)}
+.mini-card h4{font-size:.88rem;letter-spacing:.05em;margin:3px 0 6px;line-height:1.2}
+.mini-card .who b{font-size:.9rem}
+.emo{font-size:1.05rem;margin-right:4px}
+
+.sash{margin-top:18px;padding:3px;border:0;background:var(--chrome);animation:frameglow 3.4s ease-in-out infinite alternate}
+.sash-in{border-radius:18px;background:linear-gradient(180deg,#151827,#0d0f17);padding:22px 18px 20px;text-align:center;position:relative;overflow:hidden}
+.sash-in::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(255,255,255,.14),transparent 60%);pointer-events:none}
+@keyframes frameglow{from{box-shadow:0 0 18px rgba(224,230,237,.25)}to{box-shadow:0 0 44px rgba(255,255,255,.55)}}
+.ribbon{display:inline-block;font-size:.6rem;letter-spacing:.3em;font-weight:700;padding:6px 14px;border-radius:99px;background:var(--chrome);color:#0b0c10;box-shadow:0 0 18px rgba(255,255,255,.4)}
+.sash .thumb{width:170px;height:220px;margin:18px auto 14px;border-radius:18px;border:2px solid rgba(255,255,255,.55);box-shadow:0 0 30px rgba(224,230,237,.35)}
+.award-badge{width:52px;height:52px;margin:-38px auto 8px;position:relative;z-index:2;border-radius:50%;display:grid;place-items:center;font-size:1.5rem;background:var(--chrome);box-shadow:0 0 0 4px #0d0f17,0 0 22px rgba(255,255,255,.6)}
+.sash h3{font-size:1.25rem;letter-spacing:.1em;line-height:1.2;margin:6px 0 10px}
+.sash .who b{font-size:1.15rem}
+
+.climax{margin-top:56px;padding-top:34px;position:relative}
+.climax::before{content:"";position:absolute;left:50%;top:0;width:140%;height:340px;transform:translateX(-50%);background:radial-gradient(ellipse at 50% 0%,rgba(245,217,138,.16),transparent 65%);pointer-events:none}
+.climax-title{text-align:center;position:relative}
+.climax-title small{display:block;font-size:.62rem;letter-spacing:.4em;color:#f5d98a;text-transform:uppercase}
+.climax-title h2{font-size:1.5rem;font-weight:900;letter-spacing:.12em;margin-top:8px;line-height:1.2;filter:drop-shadow(0 0 16px rgba(245,217,138,.45))}
+.climax-title .rule{width:160px;height:2px;margin:14px auto 0;background:linear-gradient(90deg,transparent,#f5d98a,transparent);box-shadow:0 0 14px rgba(245,217,138,.6)}
+.step{margin:26px 0 12px;text-align:center;font-size:.62rem;letter-spacing:.3em;color:var(--steel);text-transform:uppercase}
+
+.fire{padding:3px;border:0;background:var(--fire);animation:flick 1.8s ease-in-out infinite alternate}
+@keyframes flick{0%{box-shadow:0 0 20px rgba(255,106,61,.35),0 0 50px rgba(255,179,71,.2)}100%{box-shadow:0 0 34px rgba(255,150,61,.6),0 0 80px rgba(255,210,122,.3)}}
+.fire .sash-in{background:linear-gradient(180deg,#1c1518,#0d0f17)}
+.fire .sash-in::before{background:radial-gradient(circle at 50% 100%,rgba(255,106,61,.25),transparent 60%),radial-gradient(circle at 50% 0%,rgba(255,240,200,.12),transparent 60%)}
+.fire .ribbon{background:var(--fire);color:#2a0d05;box-shadow:0 0 20px rgba(255,150,61,.6)}
+.fire .thumb{border-color:#ffb347;box-shadow:0 0 30px rgba(255,150,61,.5)}
+.fire .award-badge{background:var(--fire);box-shadow:0 0 0 4px #0d0f17,0 0 26px rgba(255,150,61,.8)}
+.fire h3{background:var(--fire);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+.podium{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:end}
+.pod{padding:12px 10px 14px;text-align:center}
+.pod .thumb{width:100%;border-radius:14px;border:1px solid rgba(192,192,192,.4)}
+.pod.p2 .thumb{aspect-ratio:3/3.4}
+.pod.p1 .thumb{aspect-ratio:3/4.2;border-color:#fff;box-shadow:0 0 22px rgba(255,255,255,.3)}
+.pod .medal{font-size:1.5rem;margin:10px 0 2px}
+.pod h4{font-size:.78rem;letter-spacing:.08em;line-height:1.25;margin-bottom:8px}
+.pod .who b{font-size:.88rem}
+.pod.p1{border-color:rgba(255,255,255,.5);box-shadow:0 0 26px rgba(224,230,237,.2)}
+
+.queen{margin-top:20px;padding:3px;border:0;background:var(--gold);animation:queenglow 3s ease-in-out infinite alternate}
+@keyframes queenglow{from{box-shadow:0 0 30px rgba(245,217,138,.35),0 0 70px rgba(255,255,255,.12)}to{box-shadow:0 0 56px rgba(245,217,138,.75),0 0 120px rgba(255,255,255,.28)}}
+.queen .sash-in{padding:30px 18px 28px;background:linear-gradient(180deg,#171622,#0c0d13)}
+.queen .sash-in::before{background:radial-gradient(circle at 50% 0%,rgba(255,236,170,.28),transparent 62%)}
+.queen .ribbon{background:var(--gold);color:#3a2a06;box-shadow:0 0 22px rgba(245,217,138,.7)}
+.queen .crownbig{font-size:3rem;line-height:1;margin-bottom:6px;animation:crownfloat 3s ease-in-out infinite;filter:drop-shadow(0 0 18px rgba(245,217,138,.9))}
+@keyframes crownfloat{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-8px) rotate(3deg)}}
+.queen .thumb{width:230px;height:300px;margin:18px auto 16px;border-radius:22px;border:3px solid #f5d98a;box-shadow:0 0 40px rgba(245,217,138,.55)}
+.queen h3{font-size:1.7rem;font-weight:900;letter-spacing:.1em;background:var(--gold);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 14px rgba(245,217,138,.5))}
+.queen .who b{font-size:1.3rem}
+.queen .extras{margin-top:12px;font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;color:#f5d98a}
+.sp{position:absolute;width:4px;height:4px;border-radius:50%;background:#fff;box-shadow:0 0 8px 2px rgba(255,240,190,.9);opacity:0;animation:spark 4s linear infinite;pointer-events:none}
+@keyframes spark{0%{opacity:0;transform:translateY(20px) scale(.4)}20%{opacity:1}100%{opacity:0;transform:translateY(-120px) scale(1.2)}}
+
+footer{text-align:center;margin-top:34px}
+.admin-link{background:none;border:0;color:rgba(161,168,179,.45);font:500 .62rem 'Montserrat',sans-serif;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;padding:10px}
+.admin-link:hover{color:var(--plat)}
+
+/* Bottom nav */
+.bottom-nav{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom));width:calc(100% - 28px);max-width:460px;z-index:50;display:flex;justify-content:space-between;padding:8px;border-radius:26px;
+  background:rgba(18,20,29,.55);backdrop-filter:blur(22px) saturate(160%);-webkit-backdrop-filter:blur(22px) saturate(160%);border:1px solid rgba(224,230,237,.28);box-shadow:0 10px 40px rgba(0,0,0,.6),0 0 30px rgba(224,230,237,.12),inset 0 1px 0 rgba(255,255,255,.14)}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:9px 0;border:0;background:transparent;color:var(--steel);font:500 .55rem 'Montserrat',sans-serif;letter-spacing:.1em;text-transform:uppercase;border-radius:18px;cursor:pointer;transition:.3s}
+.nav-btn svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.nav-btn.active{color:#fff;background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.04));box-shadow:inset 0 0 0 1px rgba(224,230,237,.3),0 0 18px rgba(224,230,237,.25)}
+.nav-btn.active svg{filter:drop-shadow(0 0 6px #fff)}
+.toast{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom));transform:translate(-50%,20px);opacity:0;z-index:99;background:rgba(18,20,29,.92);border:1px solid var(--silver);padding:12px 18px;border-radius:14px;font-size:.82rem;max-width:88%;text-align:center;transition:.35s;pointer-events:none;box-shadow:0 0 24px rgba(224,230,237,.25)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div class="stars"></div>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+  <linearGradient id="sg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#ffffff"/><stop offset=".45" stop-color="#a1a8b3"/><stop offset=".7" stop-color="#f4f6f9"/><stop offset="1" stop-color="#8b929e"/>
+  </linearGradient>
+</defs></svg>
+
+<div id="app">
+  <header class="brand">
+    <h1 class="silver-text">MISS GRAND</h1>
+    <div class="year">2 0 2 6</div>
+    <div class="tag">Silver Glamour &amp; Diamond Glow</div>
+    <div class="status local" id="status"><i></i><span id="statusTxt">Conectando…</span></div>
+  </header>
+
+  <!-- TAB 1: FICHA -->
+  <section class="tab active" id="tab-ficha">
+    <div class="glass">
+      <div class="cd-label">La gala comienza en</div>
+      <div class="cd-grid" id="cdGrid">
+        <div class="cd-box"><b id="cd-d">00</b><small>Días</small></div>
+        <div class="cd-box"><b id="cd-h">00</b><small>Horas</small></div>
+        <div class="cd-box"><b id="cd-m">00</b><small>Min</small></div>
+        <div class="cd-box"><b id="cd-s">00</b><small>Seg</small></div>
+      </div>
+      <div class="cd-live silver-text" id="cdLive" hidden>✦ ¡Comienza la gala! ✦</div>
+    </div>
+
+    <h2 class="sec-title silver-text">Ficha de inscripción</h2>
+    <p class="sec-sub">Completa tus datos para entrar en el certamen</p>
+
+    <div class="glass" id="regCard">
+      <form id="regForm" autocomplete="off">
+        <label class="f" for="fReal">Nombre real</label>
+        <input type="text" id="fReal" maxlength="60" placeholder="Tu nombre real">
+        <label class="f" for="fName">Nombre de Miss / Identidad</label>
+        <input type="text" id="fName" maxlength="40" placeholder="Tu nombre artístico">
+        <label class="f" for="fCountry">País / Delegación</label>
+        <input type="text" id="fCountry" maxlength="40" placeholder="Ej: Miss Universo Cutre">
+        <button class="btn" id="regBtn" type="submit">Inscribirse en el Certamen</button>
+      </form>
+    </div>
+
+    <div class="glass done" id="regDone" hidden>
+      <div class="seal">✓</div>
+      <h3 class="silver-text">Inscripción Homologada</h3>
+      <p id="regDoneTxt"></p>
+      <button class="btn ghost" id="regAgain" type="button">Inscribir a otra candidata</button>
+    </div>
+
+    <h2 class="sec-title silver-text">Backstage</h2>
+    <p class="sec-sub">Prepárate frente al espejo</p>
+    <div class="mirror">
+      <div class="mirror-in">
+        <div class="ratio">
+          <iframe src="https://www.youtube-nocookie.com/embed/Pj1N2u0Vj_g" title="Masterclass de Pasarela" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+        </div>
+        <div class="cap silver-text">Masterclass de Pasarela</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAB 2: CANDIDATAS -->
+  <section class="tab" id="tab-candidatas">
+    <h2 class="sec-title silver-text">Candidatas</h2>
+    <p class="sec-sub" id="candCount">Ordenadas por delegación</p>
+    <div class="grid" id="candGrid"></div>
+  </section>
+
+  <!-- TAB 3: GALA -->
+  <section class="tab" id="tab-gala">
+    <h2 class="sec-title silver-text">La Gala</h2>
+    <p class="sec-sub">Toca cada bloque para ver más detalles</p>
+    <div class="timeline">
+      <article class="tl-item"><span class="node">1</span>
+        <div class="glass"><small>BLOQUE 1</small><h3>Pasarela y Grito de la Patria</h3>
+          <p>Desfile en traje de gala y grito dramático de cada delegación al micrófono.</p>
+          <div class="more">Al terminar el bloque se abre la votación del Bloque 1 en la pestaña Urna.</div></div></article>
+      <article class="tl-item"><span class="node">2</span>
+        <div class="glass"><small>BLOQUE 2</small><h3>La Ronda de Preguntas</h3>
+          <p>El filtro intelectual: cada candidata saca una pregunta al azar de la pecera.</p>
+          <div class="more">Al terminar el bloque se abre la votación del Bloque 2 en la pestaña Urna.</div></div></article>
+      <article class="tl-item"><span class="node">3</span>
+        <div class="glass"><small>BLOQUE 3</small><h3>Concurso de Talentos</h3>
+          <p>Expresión libre: comedia, playback o actuación. Máximo 2 minutos.</p>
+          <div class="more">Al terminar el bloque se abre la votación del Bloque 3 y el Premio Especial.</div></div></article>
+    </div>
+  </section>
+
+  <!-- TAB 4: URNA -->
+  <section class="tab" id="tab-urna">
+    <h2 class="sec-title silver-text">La Urna</h2>
+    <div id="urnaBox"></div>
+  </section>
+
+  <!-- TAB 5: PREMIOS & CUADRO DE HONOR -->
+  <section class="tab" id="tab-premios">
+    <h2 class="sec-title silver-text">Premios &amp; Cuadro de Honor</h2>
+    <div class="banner" id="banner" hidden>✦ Los resultados se revelarán durante la gala ✦</div>
+    <div class="adminbar" id="adminBar" hidden>
+      <div class="row">
+        <div><b>Publicar Resultados</b><small id="pubHint">Borrador: solo tú ves los nombres</small></div>
+        <div class="tg" id="pubToggle" role="switch" aria-checked="false" tabindex="0"></div>
+      </div>
+      <div class="tools">
+        <button class="mini" id="demoBtn" type="button">Cargar candidatas de ejemplo</button>
+        <button class="mini danger" id="clearAwardsBtn" type="button">Vaciar premios</button>
+      </div>
+    </div>
+    <div id="premiosRoot"></div>
+  </section>
+
+  <!-- TAB 6: ADMIN (oculta) -->
+  <section class="tab" id="tab-admin">
+    <h2 class="sec-title silver-text">Control Organizador</h2>
+
+    <div class="glass" id="adminGate">
+      <label class="f" for="adminPass">Contraseña</label>
+      <input type="text" id="adminPass" autocomplete="off" style="-webkit-text-security:disc" placeholder="••••••••••">
+      <button class="btn" id="adminLogin" type="button">Entrar</button>
+    </div>
+
+    <div id="adminPanel" hidden>
+      <div class="glass">
+        <h3 style="font-size:.95rem;letter-spacing:.14em;margin-bottom:12px">Interruptor de votación</h3>
+        <div class="sw" id="adminSwitch"></div>
+      </div>
+
+      <div class="glass">
+        <h3 style="font-size:.95rem;letter-spacing:.14em;margin-bottom:6px">Photocall</h3>
+        <p class="sec-sub" style="text-align:left">Sube o actualiza la foto de cada candidata en tiempo real</p>
+        <div id="adminPhotocall"></div>
+      </div>
+
+      <div class="glass">
+        <h3 style="font-size:.95rem;letter-spacing:.14em;margin-bottom:12px">Resultados en vivo</h3>
+        <div id="adminResults"></div>
+        <button class="btn ghost" id="resetVotes" type="button">Borrar todos los votos (pruebas)</button>
+      </div>
+
+      <div class="glass">
+        <h3 style="font-size:.95rem;letter-spacing:.14em;margin-bottom:6px">Premios &amp; Cuadro de Honor</h3>
+        <p class="sec-sub" style="text-align:left">Asigna cada premio y publica los resultados desde la pestaña Premios</p>
+        <button class="btn ghost" id="goPremios" type="button">Ir a Premios &amp; Cuadro de Honor</button>
+      </div>
+
+      <details class="dr">
+        <summary>Pecera de preguntas (20 oficiales · Bloque 2)</summary>
+        <ol id="qList"></ol>
+      </details>
+
+      <button class="btn ghost" id="adminLogout" type="button">Cerrar sesión de organizador</button>
+    </div>
+  </section>
+
+  <footer><button class="admin-link" id="adminLink" type="button">Control Organizador</button></footer>
+</div>
+
+<nav class="bottom-nav" id="nav">
+  <button class="nav-btn active" data-tab="ficha"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="11" r="2.2"/><path d="M6 16c.6-1.6 2-2.4 3-2.4s2.4.8 3 2.4M14.5 10h4M14.5 13.5h3"/></svg>Ficha</button>
+  <button class="nav-btn" data-tab="candidatas"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c.7-3.4 3.2-5.2 6-5.2s5.3 1.8 6 5.2"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14.4c2.3.1 4 1.5 4.5 4.1"/></svg>Candidatas</button>
+  <button class="nav-btn" data-tab="gala"><svg viewBox="0 0 24 24"><path d="M12 3l2.3 5.7L20 11l-5.7 2.3L12 19l-2.3-5.7L4 11l5.7-2.3z"/><path d="M19 3v3M17.5 4.5h3"/></svg>Gala</button>
+  <button class="nav-btn" data-tab="urna"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7l4-3 4 3v3M9.5 15l2 2 3.5-4"/></svg>Urna</button>
+  <button class="nav-btn" data-tab="premios"><svg viewBox="0 0 24 24"><path d="M12 3l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5-3.6-3.5 5-.7z"/></svg>Premios</button>
+</nav>
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   CONFIGURACIÓN
+   BACKEND: 'local'    -> demo en un solo dispositivo (localStorage)
+            'firebase' -> tiempo real entre todos los móviles
+   Para Firebase: crea un proyecto, activa "Realtime Database",
+   copia su URL aquí y pon reglas de lectura/escritura del nodo.
+   ========================================================= */
+const CONFIG = {
+  BACKEND: 'local',
+  FIREBASE_DB_URL: '',          // ej: 'https://tu-proyecto-default-rtdb.europe-west1.firebasedatabase.app'
+  ROOT: 'missgrand2026',
+  POLL_MS: 3000,
+  ADMIN_PASSWORD: 'missgrand32',
+  TARGET: '2026-10-24T13:30:00+02:00'   // 24 oct 2026, 13:30 Madrid (CEST, UTC+2)
+};
+
+/* ---------- Pecera: 20 preguntas del Bloque 2 (edítalas a tu gusto) ---------- */
+const QUESTIONS = [
+ "Si pudieras cenar con cualquier persona, viva o muerta, ¿quién sería y qué le preguntarías?",
+ "¿Cuál es la mayor mentira que has contado y todavía sostienes?",
+ "Si fueras presidenta por un día, ¿qué ley aprobarías primero?",
+ "¿Qué cualidad debe tener una verdadera reina más allá de la corona?",
+ "Cuenta tu momento más vergonzoso en menos de un minuto.",
+ "¿Fama eterna o una vida tranquila? Elige y defiéndelo.",
+ "¿Qué consejo le darías a tu yo de hace diez años?",
+ "¿Cuál es el mejor invento de la humanidad y por qué no es el WiFi?",
+ "Si tu vida fuera una película, ¿cómo se titularía y quién te interpretaría?",
+ "¿Qué es más importante: el talento o el esfuerzo?",
+ "¿Qué harías si mañana ganaras un millón de euros?",
+ "Redes sociales: ¿puente o trampa? Argumenta.",
+ "¿Qué superpoder elegirías y cuál sería su efecto secundario?",
+ "Si pudieras cambiar una cosa del mundo con un chasquido, ¿cuál sería?",
+ "¿Qué mensaje enviarías a tus rivales con un micrófono abierto?",
+ "¿Cuál es el mayor mito sobre los certámenes de belleza y por qué es falso?",
+ "Defiende con toda seriedad que la pizza con piña merece un Nobel.",
+ "¿Qué significa para ti el empoderamiento en el mundo actual?",
+ "Si pudieras vivir en otra época, ¿cuál elegirías y qué harías allí?",
+ "Convence al jurado en 30 segundos de por qué mereces la corona."
+];
+
+/* ---------- Categorías de votación (Urna) ---------- */
+const VOTE_BLOCKS = {
+  b1:{ title:'Bloque 1 · Pasarela y Grito de la Patria', cats:[
+    ['El Porte','¿Quién caminó como si la ropa fuera de diseñador?'],
+    ['El Impacto Vocal','¿Quién dio el grito más exagerado?'],
+    ['El Atuendo','¿Quién vino con el look más escandaloso?'],
+    ['La Actitud','¿Quién dominó la mirada hipnótica?']]},
+  b2:{ title:'Bloque 2 · La Ronda de Preguntas', cats:[
+    ['El Ingenio','¿Quién dio la respuesta más brillante?'],
+    ['El Arte del Falso','¿Quién se inventó la mayor mentira piadosa?'],
+    ['El Momento Divertido','¿Quién se lió más o metió la pata con más arte?'],
+    ['La Diplomacia','¿Quién esquivó mejor la pregunta como una política?']]},
+  b3:{ title:'Bloque 3 · Concurso de Talentos', cats:[
+    ['El Talento Real','¿Quién demostró un talento de verdad?'],
+    ['La Comedia','¿Quién dio el show más absurdo o gracioso?'],
+    ['El Descaro','¿Quién le echó más morro e improvisación?'],
+    ['El Momento Ícono','¿Qué actuación recordaremos durante años?'],
+    ['PREMIO ESPECIAL','¿Quién ha demostrado ser la más descarada, la que se come la cámara y la auténtica dueña de la noche?','Miss Grand Pu-ta']]}
+};
+
+/* ---------- Premios & Cuadro de Honor ---------- */
+const AWARD_BLOCKS = [
+  { n:1, title:'Pasarela & Grito de la Patria',
+    mentions:[['b1_mirada','👁️','Miss Mirada Hipnótica'],['b1_atuendo','👗','Miss Atuendo Escandaloso'],['b1_elegancia','✨','Miss Elegancia en Pase']],
+    sash:['b1_sash','🔊','MISS GRITO DE LA PATRIA'] },
+  { n:2, title:'La Ronda de Preguntas',
+    mentions:[['b2_diplomatica','🏛️','Miss Respuestas de Estado / La Diplomática'],['b2_ingenio','💡','Miss Ingenio Brillante'],['b2_divertido','😂','Miss Momento Divertido']],
+    sash:['b2_sash','🐍','MISS FALSO TESTIMONIO'] },
+  { n:3, title:'Concurso de Talentos',
+    mentions:[['b3_absurdo','🎪','Miss Show Absurdo'],['b3_improv','🚀','Miss Improvisación'],['b3_icono','🌟','Miss Momento Ícono']],
+    sash:['b3_sash','⭐','MISS ARTISTA REVELACIÓN'] }
+];
+const AWARD_FINAL = {
+  puta:['f_puta','🔥','MISS GRAND PU-TA'],
+  second:['f_2','🥉','2ª Finalista'],
+  first:['f_1','🥈','1ª Finalista / Virreina'],
+  queen:['f_queen','👑','MISS GRAND 2026']
+};
+
+/* =========================================================
+   UTILIDADES
+   ========================================================= */
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2,'0');
+let toastT;
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2800); }
+const rid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+
+const crown = (s=64) => `<svg class="crown" width="${s}" height="${s}" viewBox="0 0 64 64" fill="none">
+  <path d="M8 46 L4 18 L20 30 L32 8 L44 30 L60 18 L56 46 Z" fill="url(#sg)" opacity=".92"/>
+  <rect x="10" y="49" width="44" height="7" rx="2.5" fill="url(#sg)"/>
+  <circle cx="32" cy="34" r="3" fill="#0b0c10" opacity=".45"/><circle cx="20" cy="38" r="2" fill="#0b0c10" opacity=".35"/><circle cx="44" cy="38" r="2" fill="#0b0c10" opacity=".35"/></svg>`;
+const silhouette = `<svg class="sil" viewBox="0 0 100 100" fill="#e0e6ed"><circle cx="50" cy="32" r="18"/><path d="M10 100c2-28 18-40 40-40s38 12 40 40z"/></svg>`;
+
+/* ---------- Capa de datos (local / Firebase REST) ---------- */
+const DB = (() => {
+  const isFB = CONFIG.BACKEND === 'firebase' && CONFIG.FIREBASE_DB_URL;
+  const LS = 'mg_db_' + CONFIG.ROOT;
+  const url = p => CONFIG.FIREBASE_DB_URL.replace(/\/$/,'') + '/' + CONFIG.ROOT + p + '.json';
+  const lsRead = () => { try { return JSON.parse(localStorage.getItem(LS)) || {}; } catch { return {}; } };
+  function setPath(obj, path, val){
+    const k = path.split('/').filter(Boolean);
+    let o = obj;
+    k.slice(0,-1).forEach(x => { if (typeof o[x] !== 'object' || o[x] === null) o[x] = {}; o = o[x]; });
+    const last = k[k.length-1];
+    if (val === null) delete o[last]; else o[last] = val;
+  }
+  return {
+    isFB,
+    async read(){
+      if (isFB){ const r = await fetch(url(''), {cache:'no-store'}); if(!r.ok) throw new Error('read'); return (await r.json()) || {}; }
+      return lsRead();
+    },
+    async set(path, val){
+      if (isFB){
+        const r = await fetch(url(path), val === null ? {method:'DELETE'} : {method:'PUT', body: JSON.stringify(val)});
+        if(!r.ok) throw new Error('write');
+      } else {
+        const o = lsRead(); setPath(o, path, val);
+        try { localStorage.setItem(LS, JSON.stringify(o)); } catch(e){ toast('Almacenamiento lleno'); throw e; }
+      }
+    }
+  };
+})();
+
+let DATA = {};
+let lastRaw = '';
+const cands = () => Object.values(DATA.candidates || {}).sort((a,b) =>
+  (a.country||'').localeCompare(b.country||'','es',{sensitivity:'base'}) || (a.name||'').localeCompare(b.name||'','es',{sensitivity:'base'}));
+const vstate = () => (DATA.config && DATA.config.voting) || 'closed';
+const epoch  = () => (DATA.config && DATA.config.epoch) || 0;
+const published = () => !!(DATA.config && DATA.config.published);
+const isAdmin = () => sessionStorage.getItem('mg_admin') === '1';
+const winnerOf = key => { const id = DATA.awards && DATA.awards[key]; return id && DATA.candidates ? DATA.candidates[id] : null; };
+
+const sigs = {};
+function renderIf(key, sig, fn, force){ if(!force && sigs[key] === sig) return; sigs[key] = sig; fn(); }
+
+async function sync(force){
+  try{
+    const d = await DB.read();
+    setStatus(true);
+    const raw = JSON.stringify(d);
+    if (raw !== lastRaw || force){ lastRaw = raw; DATA = d; renderAll(); }
+  }catch(e){ setStatus(false); }
+}
+function setStatus(ok){
+  const s = $('#status');
+  s.className = 'status ' + (!ok ? 'off' : DB.isFB ? '' : 'local');
+  $('#statusTxt').textContent = !ok ? 'Sin conexión' : DB.isFB ? 'En vivo' : 'Modo demo (local)';
+}
+
+/* =========================================================
+   NAVEGACIÓN
+   ========================================================= */
+function show(t){
+  $$('.tab').forEach(s => s.classList.toggle('active', s.id === 'tab-' + t));
+  $$('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
+  window.scrollTo({top:0, behavior:'smooth'});
+  if (t === 'admin') renderAdmin(true);
+  if (t === 'gala') revealTimeline();
+  if (t === 'premios') renderPremios(true);
+}
+$$('.nav-btn').forEach(b => b.addEventListener('click', () => show(b.dataset.tab)));
+$('#adminLink').addEventListener('click', () => show('admin'));
+$('#goPremios').addEventListener('click', () => show('premios'));
+
+/* =========================================================
+   TAB 1 · CUENTA ATRÁS + INSCRIPCIÓN
+   ========================================================= */
+const TARGET = new Date(CONFIG.TARGET).getTime();
+function tick(){
+  const diff = TARGET - Date.now();
+  if (diff <= 0){ $('#cdGrid').hidden = true; $('#cdLive').hidden = false; return; }
+  const s = Math.floor(diff/1000);
+  $('#cd-d').textContent = pad(Math.floor(s/86400));
+  $('#cd-h').textContent = pad(Math.floor(s%86400/3600));
+  $('#cd-m').textContent = pad(Math.floor(s%3600/60));
+  $('#cd-s').textContent = pad(s%60);
+}
+tick(); setInterval(tick, 1000);
+
+$('#regForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const real = $('#fReal').value.trim(), name = $('#fName').value.trim(), country = $('#fCountry').value.trim();
+  if (!real || !name || !country) return toast('Completa los tres campos');
+  const btn = $('#regBtn'); btn.disabled = true;
+  const id = rid('c');
+  try{
+    await DB.set('/candidates/' + id, {id, real, name, country, ts: Date.now()});
+    localStorage.setItem('mg_me', id);
+    await sync(true);
+    $('#regForm').reset();
+    showRegDone({name, country});
+  }catch(err){ toast('No se pudo guardar. Inténtalo de nuevo.'); }
+  btn.disabled = false;
+});
+function showRegDone(c){
+  $('#regCard').hidden = true; $('#regDone').hidden = false;
+  $('#regDoneTxt').textContent = c.name + ' · ' + c.country;
+}
+$('#regAgain').addEventListener('click', () => {
+  localStorage.removeItem('mg_me');
+  $('#regDone').hidden = true; $('#regCard').hidden = false;
+});
+let regChecked = false;
+function checkMyReg(){
+  if (regChecked) return; regChecked = true;
+  const me = localStorage.getItem('mg_me');
+  const c = me && DATA.candidates && DATA.candidates[me];
+  if (c) showRegDone(c);
+}
+
+/* =========================================================
+   TAB 2 · CANDIDATAS
+   ========================================================= */
+const cSig = () => cands().map(c => [c.id,c.name,c.country,(c.photo||'').length,(c.photo||'').slice(-16)].join('|')).join('~');
+function drawCands(){
+  const list = cands();
+  $('#candCount').textContent = list.length ? list.length + ' candidata' + (list.length>1?'s':'') + ' · por delegación' : 'Ordenadas por delegación';
+  $('#candGrid').innerHTML = list.length ? list.map((c,i) => `
+    <article class="cand" style="animation-delay:${Math.min(i,10)*60}ms">
+      <div class="ph">${c.photo ? `<img loading="lazy" alt="${esc(c.name)}" src="${c.photo}">` : silhouette + crown(58)}</div>
+      <div class="info"><b>${esc(c.name)}</b><small>${esc(c.country)}</small></div>
+    </article>`).join('') : `<div class="empty">Aún no hay candidatas inscritas.<br>¡Sé la primera en la pestaña Ficha!</div>`;
+}
+
+/* =========================================================
+   TAB 3 · GALA (timeline)
+   ========================================================= */
+$$('.tl-item .glass').forEach(g => g.addEventListener('click', () => g.parentElement.classList.toggle('open')));
+let io;
+function revealTimeline(){
+  if (!('IntersectionObserver' in window)) return $$('.tl-item').forEach(t => t.classList.add('in'));
+  io = io || new IntersectionObserver(es => es.forEach(x => { if (x.isIntersecting){ x.target.classList.add('in'); io.unobserve(x.target); } }), {threshold:.2});
+  $$('.tl-item:not(.in)').forEach(t => io.observe(t));
+}
+
+/* =========================================================
+   TAB 4 · URNA
+   ========================================================= */
+let VOTER = localStorage.getItem('mg_voter');
+if (!VOTER){ VOTER = rid('v'); localStorage.setItem('mg_voter', VOTER); }
+let draft = {};
+const hasVoted = b => localStorage.getItem('mg_voted_' + b) === String(epoch()) || !!(DATA.votes && DATA.votes[b] && DATA.votes[b][VOTER]);
+
+function renderUrna(force){
+  const vs = vstate();
+  const sig = JSON.stringify([vs, epoch(), vs !== 'closed' && hasVoted(vs), cands().map(c => c.id + c.name + c.country)]);
+  renderIf('urna', sig, () => {
+    const box = $('#urnaBox');
+    if (vs === 'closed' || !VOTE_BLOCKS[vs]){
+      draft = {};
+      box.innerHTML = `<div class="glass lock">
+        <svg width="120" height="140" viewBox="0 0 120 140" fill="none">
+          <path class="shackle" d="M30 62 V42 a30 30 0 0 1 60 0 V62" stroke="url(#sg)" stroke-width="10" stroke-linecap="round"/>
+          <rect x="16" y="60" width="88" height="66" rx="14" fill="url(#sg)"/>
+          <circle cx="60" cy="88" r="8" fill="#0b0c10"/><rect x="56" y="90" width="8" height="18" rx="3" fill="#0b0c10"/>
+        </svg>
+        <p class="silver-text">Urnas digitales blindadas a la espera de la Directora General</p></div>`;
+      return;
+    }
+    if (hasVoted(vs)){
+      box.innerHTML = `<div class="glass voted"><div class="badge"><span>✓</span> Voto Registrado Con Éxito</div>
+        <p style="color:var(--steel);font-size:.82rem;margin:16px 0 0">${esc(VOTE_BLOCKS[vs].title)}<br>Gracias por participar. Esta urna solo admite un voto por persona.</p></div>`;
+      return;
+    }
+    const list = cands();
+    if (!list.length){ box.innerHTML = `<div class="glass empty">Aún no hay candidatas inscritas para votar.</div>`; return; }
+    const opts = key => `<option value="">Selecciona candidata…</option>` + list.map(c =>
+      `<option value="${c.id}" ${draft[key]===c.id?'selected':''}>${esc(c.name)} — ${esc(c.country)}</option>`).join('');
+    const B = VOTE_BLOCKS[vs];
+    box.innerHTML = `<div style="text-align:center;margin-bottom:6px"><span class="blockpill">Votación activa</span></div>
+      <p class="sec-sub" style="margin-top:10px">${esc(B.title)}</p>` +
+      B.cats.map((c,i) => `<div class="glass cat ${c[2]?'special':''}">
+        ${c[2] ? '<span class="tagsp">VOTO ESPECIAL</span>' : ''}
+        <h4 class="silver-text">${i+1}. ${esc(c[0])}</h4>
+        <p class="q">${esc(c[1])}</p>
+        ${c[2] ? `<p class="q" style="color:#fff">Premio: <b>${esc(c[2])}</b></p>` : ''}
+        <select data-k="${vs}_${i}">${opts(vs+'_'+i)}</select></div>`).join('') +
+      `<button class="btn" id="sendVote" type="button">Enviar mi voto</button>`;
+    $$('#urnaBox select').forEach(s => s.addEventListener('change', () => draft[s.dataset.k] = s.value));
+    $('#sendVote').addEventListener('click', sendVote);
+  }, force);
+}
+
+async function sendVote(){
+  const vs = vstate();
+  const B = VOTE_BLOCKS[vs]; if (!B) return;
+  const answers = {};
+  for (let i = 0; i < B.cats.length; i++){
+    const v = draft[vs + '_' + i];
+    if (!v) return toast('Falta elegir en: ' + B.cats[i][0]);
+    answers['c' + i] = v;
+  }
+  if (!confirm('¿Confirmas tu voto? No podrás cambiarlo.')) return;
+  const btn = $('#sendVote'); btn.disabled = true;
+  try{
+    await sync(true);                       // comprobar que la urna sigue abierta en este bloque
+    if (vstate() !== vs){ toast('La urna ha cambiado de estado'); btn.disabled = false; return; }
+    if (hasVoted(vs)){ renderUrna(true); return; }
+    await DB.set(`/votes/${vs}/${VOTER}`, {a: answers, t: Date.now()});
+    localStorage.setItem('mg_voted_' + vs, String(epoch()));
+    draft = {};
+    await sync(true); renderUrna(true);
+    toast('¡Voto registrado!');
+  }catch(e){ toast('No se pudo registrar el voto'); btn.disabled = false; }
+}
+
+/* =========================================================
+   TAB 5 · PREMIOS & CUADRO DE HONOR
+   ========================================================= */
+const reveal = () => published() || isAdmin();
+
+function personHTML(key){
+  const w = winnerOf(key);
+  if (!w) return { photo: silhouette + crown(46), who: `<b>${isAdmin() ? 'Sin asignar' : 'Por anunciar'}</b><small>Delegación / País</small>`, pending:true, draft:false, has:false };
+  if (!reveal()) return { photo: silhouette + crown(46), who: `<b>· · · · ·</b><small>Se revelará en la gala</small>`, pending:true, draft:false, has:true };
+  return {
+    photo: w.photo ? `<img alt="${esc(w.name)}" loading="lazy" src="${w.photo}">` : silhouette + crown(46),
+    who: `<b>${esc(w.name)}</b><small>${esc(w.country)}</small>`,
+    pending:false, draft: isAdmin() && !published(), has:true
+  };
+}
+function selectHTML(key){
+  if (!isAdmin()) return '';
+  const cur = DATA.awards && DATA.awards[key];
+  return `<select data-key="${key}"><option value="">— Sin asignar —</option>` +
+    cands().map(c => `<option value="${c.id}" ${cur===c.id?'selected':''}>${esc(c.name)} — ${esc(c.country)}</option>`).join('') + `</select>`;
+}
+const draftTag = p => p.draft && p.has ? `<span class="draft-tag">Borrador</span>` : '';
+
+function miniCard([key, emo, title]){
+  const p = personHTML(key);
+  return `<article class="award mini-card rv ${p.pending?'pending':''}">
+    <div class="thumb">${p.photo}</div>
+    <div class="txt"><div class="kind">Mención digital</div>
+      <h4 class="silver-text"><span class="emo">${emo}</span>${esc(title)}</h4>
+      <div class="who">${p.who}</div>${selectHTML(key)}</div>${draftTag(p)}</article>`;
+}
+function sashCard([key, emo, title]){
+  const p = personHTML(key);
+  return `<article class="award sash rv ${p.pending?'pending':''}"><div class="sash-in">
+    <span class="ribbon">★ OFFICIAL SASH AWARD ★</span>
+    <div class="thumb">${p.photo}</div>
+    <div class="award-badge">${emo}</div>
+    <h3 class="silver-text">${esc(title)}</h3>
+    <div class="who">${p.who}</div>${selectHTML(key)}${draftTag(p)}</div></article>`;
+}
+function fireCard([key, emo, title]){
+  const p = personHTML(key);
+  return `<article class="award sash fire rv ${p.pending?'pending':''}"><div class="sash-in">
+    <span class="ribbon">🔥 BANDA DE HONOR ESPECIAL 🔥</span>
+    <div class="thumb">${p.photo}</div>
+    <div class="award-badge">${emo}</div>
+    <h3>${esc(title)}</h3>
+    <div class="kind" style="font-size:.62rem;letter-spacing:.2em;color:#ffb347;text-transform:uppercase;margin-bottom:10px">La reina de la fiesta y la actitud</div>
+    <div class="who">${p.who}</div>${selectHTML(key)}${draftTag(p)}</div></article>`;
+}
+function podCard([key, emo, title], cls){
+  const p = personHTML(key);
+  return `<article class="award pod ${cls} rv ${p.pending?'pending':''}">
+    <div class="thumb">${p.photo}</div>
+    <div class="medal">${emo}</div>
+    <h4 class="silver-text">${esc(title)}</h4>
+    <div class="who">${p.who}</div>${selectHTML(key)}${draftTag(p)}</article>`;
+}
+function queenCard([key, emo, title]){
+  const p = personHTML(key);
+  const sparks = Array.from({length:16}, () => `<i class="sp" style="left:${Math.random()*100}%;bottom:${Math.random()*40}%;animation-delay:${(Math.random()*4).toFixed(2)}s;animation-duration:${(3+Math.random()*3).toFixed(2)}s"></i>`).join('');
+  return `<article class="award sash queen rv ${p.pending?'pending':''}"><div class="sash-in">
+    ${sparks}
+    <div class="crownbig">${emo}</div>
+    <span class="ribbon">✦ LA REINA CORONADA ✦</span>
+    <div class="thumb">${p.photo}</div>
+    <h3>${esc(title)}</h3>
+    <div class="who">${p.who}</div>
+    <div class="extras">Corona oficial · Banda · Ramo de flores</div>
+    ${selectHTML(key)}${draftTag(p)}</div></article>`;
+}
+
+let ioAwards;
+function observeAwards(){
+  const els = $$('#premiosRoot .rv:not(.in)');
+  if (!('IntersectionObserver' in window)){ els.forEach(e => e.classList.add('in')); return; }
+  ioAwards = ioAwards || new IntersectionObserver(es => es.forEach(x => { if (x.isIntersecting){ x.target.classList.add('in'); ioAwards.unobserve(x.target); } }), {threshold:.15});
+  els.forEach(e => ioAwards.observe(e));
+}
+
+function renderPremios(force){
+  const sig = JSON.stringify([isAdmin(), published(), DATA.awards || {}, cands().map(c => c.id+c.name+c.country+(c.photo||'').slice(-8))]);
+  renderIf('premios', sig, () => {
+    const admin = isAdmin();
+    $('#adminBar').hidden = !admin;
+    $('#banner').hidden = published() || admin;
+    const tg = $('#pubToggle'); tg.classList.toggle('on', published()); tg.setAttribute('aria-checked', published());
+    $('#pubHint').textContent = published() ? 'Publicado: todos ven los nombres' : 'Borrador: solo tú ves los nombres';
+
+    const html = AWARD_BLOCKS.map(b => `
+      <section class="block">
+        <div class="block-head rv"><small>Bloque ${b.n}</small><h2 class="silver-text">${esc(b.title)}</h2><div class="rule"></div></div>
+        ${b.mentions.map(miniCard).join('')}
+        ${sashCard(b.sash)}
+      </section>`).join('') + `
+      <section class="climax">
+        <div class="climax-title rv"><small>El gran final</small><h2 class="gold-text">EL GRAN CUADRO<br>DE HONOR FINAL</h2><div class="rule"></div></div>
+        <div class="step rv">Banda especial de honor</div>
+        ${fireCard(AWARD_FINAL.puta)}
+        <div class="step rv">Finalistas</div>
+        <div class="podium">${podCard(AWARD_FINAL.second,'p2')}${podCard(AWARD_FINAL.first,'p1')}</div>
+        <div class="step rv">La reina de la noche</div>
+        ${queenCard(AWARD_FINAL.queen)}
+      </section>`;
+
+    $('#premiosRoot').innerHTML = html;
+    observeAwards();
+
+    $$('#premiosRoot select[data-key]').forEach(s => s.addEventListener('change', async () => {
+      try{ await DB.set('/awards/' + s.dataset.key, s.value || null); await sync(true); toast('Premio actualizado'); }
+      catch(e){ toast('No se pudo guardar'); }
+    }));
+  }, force);
+}
+
+async function togglePublish(){
+  try{ await DB.set('/config/published', !published()); await sync(true); toast(published() ? '¡Resultados publicados!' : 'Resultados ocultos (borrador)'); }
+  catch(e){ toast('No se pudo cambiar el estado'); }
+}
+$('#pubToggle').addEventListener('click', togglePublish);
+$('#pubToggle').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); togglePublish(); } });
+$('#clearAwardsBtn').addEventListener('click', async () => {
+  if (!confirm('Se quitarán todas las ganadoras asignadas. ¿Continuar?')) return;
+  try{ await DB.set('/awards', null); await sync(true); toast('Premios vaciados'); }catch(e){ toast('Error'); }
+});
+$('#demoBtn').addEventListener('click', async () => {
+  const demo = [['Valentina Cruz','México'],['Camila Ríos','Argentina'],['Luna Ferrer','España'],['Sofía Blanco','Colombia'],['Aitana Vega','Chile'],['Nora Bellini','Italia'],['Ámbar Solís','Perú'],['Irene Duval','Francia']];
+  try{
+    for (const [name,country] of demo){ const id = rid('c'); await DB.set('/candidates/'+id, {id, real:name, name, country, ts:Date.now()}); }
+    await sync(true); toast('Candidatas de ejemplo cargadas');
+  }catch(e){ toast('Error'); }
+});
+
+/* =========================================================
+   TAB 6 · ADMIN
+   ========================================================= */
+$('#qList').innerHTML = QUESTIONS.map(q => `<li>${esc(q)}</li>`).join('');
+
+$('#adminLogin').addEventListener('click', () => {
+  if ($('#adminPass').value === CONFIG.ADMIN_PASSWORD){
+    sessionStorage.setItem('mg_admin','1'); $('#adminPass').value = ''; renderAdmin(true); renderPremios(true);
+  } else toast('Contraseña incorrecta');
+});
+$('#adminPass').addEventListener('keydown', e => { if (e.key === 'Enter') $('#adminLogin').click(); });
+$('#adminLogout').addEventListener('click', () => { sessionStorage.removeItem('mg_admin'); renderAdmin(true); renderPremios(true); show('ficha'); });
+
+function renderAdmin(force){
+  const ok = isAdmin();
+  $('#adminGate').hidden = ok; $('#adminPanel').hidden = !ok;
+  if (!ok) return;
+  renderIf('adm-sw', vstate(), drawSwitch, force);
+  renderIf('adm-ph', cSig(), drawPhotocall, force);
+  renderIf('adm-rs', cands().map(c => c.id + c.name).join() + JSON.stringify(DATA.votes || {}), drawResults, force);
+}
+
+function drawSwitch(){
+  const v = vstate();
+  const btn = (k, label, cls='') => `<button class="${cls} ${v===k?'active':''}" data-v="${k}">${label}</button>`;
+  $('#adminSwitch').innerHTML = btn('closed','Cerrar Urnas','close') + btn('b1','Activar Votación Bloque 1') + btn('b2','Activar Votación Bloque 2') + btn('b3','Activar Votación Bloque 3');
+  $$('#adminSwitch button').forEach(b => b.addEventListener('click', async () => {
+    try{ await DB.set('/config/voting', b.dataset.v); await sync(true); toast(b.textContent.trim()); }
+    catch(e){ toast('Error al cambiar el estado'); }
+  }));
+}
+
+function drawPhotocall(){
+  const list = cands();
+  $('#adminPhotocall').innerHTML = list.length ? list.map(c => `
+    <div class="pc-row">
+      <div class="pc-thumb">${c.photo ? `<img alt="" src="${c.photo}">` : crown(26)}</div>
+      <div class="pc-info"><b>${esc(c.name)}</b><small>${esc(c.country)} · ${esc(c.real)}</small></div>
+      <label class="mini">Cámara<input type="file" accept="image/*" capture="environment" hidden data-id="${c.id}"></label>
+      <label class="mini">Galería<input type="file" accept="image/*" hidden data-id="${c.id}"></label>
+      <button class="mini danger" data-del="${c.id}">✕</button>
+    </div>`).join('') : `<p class="sec-sub">No hay candidatas todavía.</p>`;
+  $$('#adminPhotocall input[type=file]').forEach(i => i.addEventListener('change', () => uploadPhoto(i.dataset.id, i)));
+  $$('#adminPhotocall [data-del]').forEach(b => b.addEventListener('click', async () => {
+    if (!confirm('¿Eliminar esta candidata?')) return;
+    try{ await DB.set('/candidates/' + b.dataset.del, null); await sync(true); }catch(e){ toast('No se pudo eliminar'); }
+  }));
+}
+
+function resizeImage(file){
+  return new Promise((res, rej) => {
+    const img = new Image(), u = URL.createObjectURL(file);
+    img.onload = () => {
+      const W = 360, H = 480, c = document.createElement('canvas'); c.width = W; c.height = H;
+      const r = Math.max(W/img.width, H/img.height), w = img.width*r, h = img.height*r;
+      c.getContext('2d').drawImage(img, (W-w)/2, (H-h)/2, w, h);
+      URL.revokeObjectURL(u); res(c.toDataURL('image/jpeg', .75));
+    };
+    img.onerror = rej; img.src = u;
+  });
+}
+async function uploadPhoto(id, input){
+  const f = input.files && input.files[0]; if (!f) return;
+  try{
+    toast('Subiendo foto…');
+    const data = await resizeImage(f);
+    await DB.set(`/candidates/${id}/photo`, data);
+    await sync(true); toast('Foto actualizada en todas las pantallas');
+  }catch(e){ toast('No se pudo subir la foto'); }
+}
+
+function tally(){
+  const cs = cands(), total = {}, cat = {}, voters = {b1:0,b2:0,b3:0};
+  cs.forEach(c => total[c.id] = {b1:0,b2:0,b3:0,all:0});
+  ['b1','b2','b3'].forEach(b => {
+    Object.values((DATA.votes && DATA.votes[b]) || {}).forEach(v => {
+      voters[b]++;
+      Object.entries(v.a || {}).forEach(([k, cid]) => {
+        if (!total[cid]) return;
+        total[cid][b]++; total[cid].all++;
+        const key = b + '_' + k.slice(1);
+        cat[key] = cat[key] || {}; cat[key][cid] = (cat[key][cid] || 0) + 1;
+      });
+    });
+  });
+  return {cs, total, cat, voters};
+}
+function drawResults(){
+  const openKeys = $$('#adminResults details[open]').map(d => d.dataset.k);
+  const {cs, total, cat, voters} = tally();
+  const rank = [...cs].sort((a,b) => total[b.id].all - total[a.id].all || (a.name||'').localeCompare(b.name||'','es'));
+  const top = rank.filter(c => total[c.id].all > 0).slice(0,3);
+  let h = `<p class="cat-t">Votantes: B1 ${voters.b1} · B2 ${voters.b2} · B3 ${voters.b3}</p>`;
+  h += top.length ? `<div class="podium-admin">` + top.map((c,i) => `<div class="pod-adm"><div class="m">${i+1}</div>
+      <div class="n"><b>${esc(c.name)}</b><small>${esc(c.country)}</small></div><div class="p">${total[c.id].all}</div></div>`).join('') + `</div>`
+    : `<p class="sec-sub">Aún no hay votos registrados.</p>`;
+  if (cs.length){
+    h += `<table class="res"><tr><th>Candidata</th><th>B1</th><th>B2</th><th>B3</th><th>Total</th></tr>` +
+      rank.map(c => `<tr><td>${esc(c.name)}</td><td>${total[c.id].b1}</td><td>${total[c.id].b2}</td><td>${total[c.id].b3}</td><td><b>${total[c.id].all}</b></td></tr>`).join('') + `</table>`;
+    h += `<p class="cat-t" style="margin-top:16px">Desglose por categoría</p>`;
+    Object.keys(VOTE_BLOCKS).forEach(b => {
+      h += `<details class="dr" data-k="${b}" ${openKeys.includes(b)?'open':''}><summary>${esc(VOTE_BLOCKS[b].title)}</summary>` +
+        VOTE_BLOCKS[b].cats.map((c,i) => {
+          const m = cat[b+'_'+i] || {};
+          const chips = cs.filter(x => m[x.id]).sort((a,z) => m[z.id]-m[a.id]).map(x => `<span class="chip">${esc(x.name)} · <b>${m[x.id]}</b></span>`).join('');
+          return `<div class="cat-t">${esc(c[0])}${c[2] ? ' ('+esc(c[2])+')' : ''}</div><div class="chips">${chips || '<span class="chip">Sin votos</span>'}</div>`;
+        }).join('') + `</details>`;
+    });
+  }
+  $('#adminResults').innerHTML = h;
+}
+$('#resetVotes').addEventListener('click', async () => {
+  if (!confirm('Se borrarán TODOS los votos y todos podrán volver a votar. ¿Continuar?')) return;
+  if (!confirm('Confirmación final: esta acción no se puede deshacer.')) return;
+  try{ await DB.set('/votes', null); await DB.set('/config/epoch', epoch() + 1); await sync(true); toast('Votos borrados'); }
+  catch(e){ toast('No se pudo borrar'); }
+});
+
+/* =========================================================
+   ARRANQUE
+   ========================================================= */
+function renderAll(){
+  renderIf('cands', cSig(), drawCands);
+  renderUrna();
+  renderAdmin();
+  renderPremios();
+  checkMyReg();
+}
+window.addEventListener('storage', () => sync());
+document.addEventListener('visibilitychange', () => { if (!document.hidden) sync(); });
+setInterval(sync, CONFIG.POLL_MS);
+sync(true);
+revealTimeline();
+</script>
+</body>
+</html>
