@@ -389,6 +389,13 @@ footer{text-align:center;margin-top:34px}
 
     <div id="adminPanel" hidden>
       <div class="glass">
+        <h3 style="font-size:.95rem;letter-spacing:.14em;margin-bottom:6px">Modo de funcionamiento</h3>
+        <p class="sec-sub" style="text-align:left">Live comparte los datos. Debug usa el almacenamiento local independiente de cada dispositivo.</p>
+        <div class="tab-visibility-row"><span id="adminLiveLabel"></span>
+          <button class="tg" id="adminLiveToggle" type="button" role="switch" aria-label="Activar modo live" aria-checked="true"></button></div>
+      </div>
+
+      <div class="glass">
         <h3 style="font-size:.95rem;letter-spacing:.14em;margin-bottom:6px">Visibilidad de pestañas</h3>
         <p class="sec-sub" style="text-align:left">Activa las pestañas que quieras mostrar. Ficha siempre está visible.</p>
         <div class="tab-visibility" id="adminTabVisibility"></div>
@@ -536,7 +543,8 @@ const silhouette = `<svg class="sil" viewBox="0 0 100 100" fill="#e0e6ed"><circl
 
 /* ---------- Capa de datos (local / Supabase REST) ---------- */
 const DB = (() => {
-  const live = CONFIG.BACKEND === 'supabase';
+  let activeLive = CONFIG.BACKEND === 'supabase';
+  const modePath = '/config/liveMode';
   const LS = 'mg_db_' + CONFIG.ROOT;
   const T = CONFIG.SUPABASE_URL.replace(/\/$/,'') + '/rest/v1/kv';
   const H = {
@@ -545,6 +553,15 @@ const DB = (() => {
     'Content-Type': 'application/json'
   };
   const lsRead = () => { try { return JSON.parse(localStorage.getItem(LS)) || {}; } catch { return {}; } };
+  async function refreshMode(){
+    if (CONFIG.BACKEND !== 'supabase'){ activeLive = false; return; }
+    if (!CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_KEY) throw new Error('Supabase no configurado');
+    const q = new URLSearchParams({select:'value', path:'eq.' + modePath});
+    const r = await fetch(T + '?' + q, {headers:H, cache:'no-store'});
+    if(!r.ok) throw new Error('read mode');
+    const rows = await r.json();
+    activeLive = !rows.length || rows[0].value !== false;
+  }
   function setPath(obj, path, val){
     const k = path.split('/').filter(Boolean);
     let o = obj;
@@ -553,10 +570,11 @@ const DB = (() => {
     if (val === null) delete o[last]; else o[last] = val;
   }
   return {
-    live,
+    get live(){ return activeLive; },
     async read(){
-      if (live){
-        if (!CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_KEY) throw new Error('Supabase no configurado');
+      if (CONFIG.BACKEND === 'supabase'){
+        await refreshMode();
+        if (!activeLive) return lsRead();
         const r = await fetch(T + '?select=path,value', {headers:H, cache:'no-store'});
         if(!r.ok) throw new Error('read');
         const rows = await r.json();
@@ -567,7 +585,7 @@ const DB = (() => {
       return lsRead();
     },
     async set(path, val){
-      if (live){
+      if (CONFIG.BACKEND === 'supabase' && (path === modePath || activeLive)){
         if (!CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_KEY) throw new Error('Supabase no configurado');
         const r = val === null
           ? await fetch(T + '?' + new URLSearchParams({or:`(path.eq.${path},path.like.${path}/*)`}), {method:'DELETE', headers:H})
@@ -587,6 +605,7 @@ const DB = (() => {
 
 let DATA = {};
 let lastRaw = '';
+let lastLive = null;
 const cands = () => Object.values(DATA.candidates || {}).sort((a,b) =>
   (a.country||'').localeCompare(b.country||'','es',{sensitivity:'base'}) || (a.name||'').localeCompare(b.name||'','es',{sensitivity:'base'}));
 const vstate = () => (DATA.config && DATA.config.voting) || 'closed';
@@ -610,7 +629,9 @@ async function sync(force){
     const d = await DB.read();
     setStatus(true);
     const raw = JSON.stringify(d);
-    if (raw !== lastRaw || force){ lastRaw = raw; DATA = d; renderAll(); }
+    const modeChanged = lastLive !== DB.live;
+    lastLive = DB.live;
+    if (raw !== lastRaw || force || modeChanged){ lastRaw = raw; DATA = d; renderAll(); }
   }catch(e){ setStatus(false); }
 }
 function setStatus(ok){
@@ -939,10 +960,30 @@ function renderAdmin(force){
   const ok = isAdmin();
   $('#adminGate').hidden = ok; $('#adminPanel').hidden = !ok;
   if (!ok) return;
+  renderIf('adm-mode', DB.live ? 'live' : 'local', drawLiveMode, force);
   renderIf('adm-tabs', JSON.stringify(PUBLIC_TABS.map(({id}) => [id, isTabVisible(id)])), drawTabVisibility, force);
   renderIf('adm-sw', vstate(), drawSwitch, force);
   renderIf('adm-ph', cSig(), drawPhotocall, force);
   renderIf('adm-rs', cands().map(c => c.id + c.name).join() + JSON.stringify(DATA.votes || {}), drawResults, force);
+}
+
+function drawLiveMode(){
+  const button = $('#adminLiveToggle');
+  button.classList.toggle('on', DB.live);
+  button.setAttribute('aria-checked', String(DB.live));
+  button.setAttribute('aria-label', DB.live ? 'Desactivar modo live' : 'Activar modo live');
+  $('#adminLiveLabel').textContent = DB.live
+    ? 'Modo live · datos compartidos'
+    : 'Modo debug · local en este dispositivo';
+  button.onclick = async () => {
+    button.disabled = true;
+    try{
+      await DB.set('/config/liveMode', !DB.live);
+      await sync(true);
+      toast(DB.live ? 'Modo live activado' : 'Modo debug activado');
+    }catch(e){ toast('No se pudo cambiar el modo'); }
+    finally{ button.disabled = false; }
+  };
 }
 
 function drawTabVisibility(){
