@@ -330,7 +330,6 @@ footer{text-align:center;margin-top:34px}
       <div class="seal">✓</div>
       <h3 class="silver-text">Inscripción Homologada</h3>
       <p id="regDoneTxt"></p>
-      <button class="btn ghost" id="regAgain" type="button">Inscribir a otra candidata</button>
     </div>
   </section>
 
@@ -711,16 +710,14 @@ function showRegDone(c){
   $('#regCard').hidden = true; $('#regDone').hidden = false;
   $('#regDoneTxt').textContent = c.name + ' · ' + c.country;
 }
-$('#regAgain').addEventListener('click', () => {
-  localStorage.removeItem('mg_me');
-  $('#regDone').hidden = true; $('#regCard').hidden = false;
-});
-let regChecked = false;
 function checkMyReg(){
-  if (regChecked) return; regChecked = true;
   const me = localStorage.getItem('mg_me');
   const c = me && DATA.candidates && DATA.candidates[me];
   if (c) showRegDone(c);
+  else{
+    $('#regDone').hidden = true;
+    $('#regCard').hidden = false;
+  }
 }
 
 /* =========================================================
