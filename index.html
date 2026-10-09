@@ -63,6 +63,7 @@ input[type=text],select{width:100%;padding:14px;border-radius:12px;border:1px so
 input[type=text]:focus,select:focus{border-color:var(--silver);box-shadow:0 0 0 3px rgba(224,230,237,.12),0 0 18px rgba(224,230,237,.15)}
 .country-input{display:flex;align-items:center;width:100%;border:1px solid var(--line);border-radius:12px;background:rgba(8,9,14,.7);transition:.25s}
 .country-input:focus-within{border-color:var(--silver);box-shadow:0 0 0 3px rgba(224,230,237,.12),0 0 18px rgba(224,230,237,.15)}
+.country-input.invalid,.country-input.invalid:focus-within{border-color:#ff7a7a;box-shadow:0 0 0 3px rgba(255,122,122,.18),0 0 18px rgba(255,122,122,.2)}
 .country-prefix{flex:none;padding:0 0 0 14px;color:var(--white);font-size:.95rem}
 .country-input input[type=text]{flex:1;min-width:0;width:auto;border:0;border-radius:0;background:transparent;padding-left:8px}
 .country-input input[type=text]:focus{border:0;box-shadow:none}
@@ -690,6 +691,11 @@ function tick(){
 }
 tick(); setInterval(tick, 1000);
 
+$('#fCountry').addEventListener('input', () => {
+  $('.country-input').classList.remove('invalid');
+  $('#fCountry').removeAttribute('aria-invalid');
+});
+
 $('#regForm').addEventListener('submit', async e => {
   e.preventDefault();
   const real = $('#fReal').value.trim(), name = $('#fName').value.trim();
@@ -704,7 +710,12 @@ $('#regForm').addEventListener('submit', async e => {
     const countryExists = Object.values(currentData.candidates || {}).some(candidate =>
       normalizeCountry(candidate.country || '') === normalizedCountry
     );
-    if (countryExists){ toast('Ya existe una candidata de ese país / delegación'); return; }
+    if (countryExists){
+      $('.country-input').classList.add('invalid');
+      $('#fCountry').setAttribute('aria-invalid', 'true');
+      toast('Ya existe una candidata de ese país / delegación');
+      return;
+    }
     await DB.set('/candidates/' + id, {id, real, name, country, ts: Date.now()});
     localStorage.setItem('mg_me', id);
     await sync(true);
