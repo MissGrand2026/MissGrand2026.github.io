@@ -536,6 +536,7 @@ const AWARD_FINAL = {
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const normalizeCountry = country => country.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'').toLocaleLowerCase('es');
 const pad = n => String(n).padStart(2,'0');
 let toastT;
 function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2800); }
@@ -698,13 +699,19 @@ $('#regForm').addEventListener('submit', async e => {
   const btn = $('#regBtn'); btn.disabled = true;
   const id = rid('c');
   try{
+    const currentData = await DB.read();
+    const normalizedCountry = normalizeCountry(country);
+    const countryExists = Object.values(currentData.candidates || {}).some(candidate =>
+      normalizeCountry(candidate.country || '') === normalizedCountry
+    );
+    if (countryExists){ toast('Ya existe una candidata de ese país / delegación'); return; }
     await DB.set('/candidates/' + id, {id, real, name, country, ts: Date.now()});
     localStorage.setItem('mg_me', id);
     await sync(true);
     $('#regForm').reset();
     showRegDone({name, country});
   }catch(err){ toast('No se pudo guardar. Inténtalo de nuevo.'); }
-  btn.disabled = false;
+  finally{ btn.disabled = false; }
 });
 function showRegDone(c){
   $('#regCard').hidden = true; $('#regDone').hidden = false;
