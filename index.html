@@ -61,6 +61,11 @@ header.brand .tag{font-size:.68rem;letter-spacing:.3em;text-transform:uppercase;
 label.f{display:block;font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--steel);margin:14px 0 6px}
 input[type=text],select{width:100%;padding:14px;border-radius:12px;border:1px solid var(--line);background:rgba(8,9,14,.7);color:var(--white);font:inherit;font-size:.95rem;outline:none;transition:.25s}
 input[type=text]:focus,select:focus{border-color:var(--silver);box-shadow:0 0 0 3px rgba(224,230,237,.12),0 0 18px rgba(224,230,237,.15)}
+.country-input{display:flex;align-items:center;width:100%;border:1px solid var(--line);border-radius:12px;background:rgba(8,9,14,.7);transition:.25s}
+.country-input:focus-within{border-color:var(--silver);box-shadow:0 0 0 3px rgba(224,230,237,.12),0 0 18px rgba(224,230,237,.15)}
+.country-prefix{flex:none;padding:0 0 0 14px;color:var(--white);font-size:.95rem}
+.country-input input[type=text]{flex:1;min-width:0;width:auto;border:0;border-radius:0;background:transparent;padding-left:8px}
+.country-input input[type=text]:focus{border:0;box-shadow:none}
 select option{background:#12141d;color:#fff}
 .btn{position:relative;overflow:hidden;width:100%;margin-top:20px;padding:15px;border:0;border-radius:14px;cursor:pointer;font:600 .85rem 'Montserrat',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#0b0c10;background:var(--chrome);box-shadow:0 6px 22px rgba(224,230,237,.22),inset 0 1px 0 #fff;transition:transform .15s,box-shadow .25s}
 .btn::after{content:"";position:absolute;top:0;left:-70%;width:45%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.85),transparent);transform:skewX(-20deg);transition:left .6s}
@@ -313,7 +318,10 @@ footer{text-align:center;margin-top:34px}
         <label class="f" for="fName">Nombre de Miss / Identidad</label>
         <input type="text" id="fName" maxlength="40" placeholder="Tu nombre artístico">
         <label class="f" for="fCountry">País / Delegación</label>
-        <input type="text" id="fCountry" maxlength="40" placeholder="Ej: Miss Grand Granada">
+        <div class="country-input">
+          <span class="country-prefix">Miss Grand</span>
+          <input type="text" id="fCountry" maxlength="29" placeholder="Ej: Granada">
+        </div>
         <button class="btn" id="regBtn" type="submit">Inscribirse en el Certamen</button>
       </form>
     </div>
@@ -684,7 +692,9 @@ tick(); setInterval(tick, 1000);
 
 $('#regForm').addEventListener('submit', async e => {
   e.preventDefault();
-  const real = $('#fReal').value.trim(), name = $('#fName').value.trim(), country = $('#fCountry').value.trim();
+  const real = $('#fReal').value.trim(), name = $('#fName').value.trim();
+  const countrySuffix = $('#fCountry').value.trim();
+  const country = countrySuffix && $('.country-prefix').textContent.trim() + ' ' + countrySuffix;
   if (!real || !name || !country) return toast('Completa los tres campos');
   const btn = $('#regBtn'); btn.disabled = true;
   const id = rid('c');
