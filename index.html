@@ -640,7 +640,8 @@ async function sync(force){
     const modeChanged = lastLive !== DB.live;
     lastLive = DB.live;
     if (raw !== lastRaw || force || modeChanged){ lastRaw = raw; DATA = d; renderAll(); }
-  }catch(e){ setStatus(false); }
+    return true;
+  }catch(e){ setStatus(false); return false; }
 }
 function setStatus(ok){
   const s = $('#status');
@@ -733,6 +734,10 @@ function checkMyReg(){
   const c = me && DATA.candidates && DATA.candidates[me];
   if (c) showRegDone(c);
   else{
+    if (me){
+      localStorage.removeItem('mg_me');
+      toast('Alguien ha iniciado sesión con tu candidata. Se ha cerrado la sesión.');
+    }
     $('#regDone').hidden = true;
     $('#regCard').hidden = false;
   }
@@ -769,11 +774,96 @@ function revealTimeline(){
 let VOTER = localStorage.getItem('mg_voter');
 if (!VOTER){ VOTER = rid('v'); localStorage.setItem('mg_voter', VOTER); }
 let draft = {};
+const registeredCandidateId = () => {
+  const id = localStorage.getItem('mg_me');
+  return id && DATA.candidates && DATA.candidates[id] ? id : null;
+};
 const hasVoted = b => localStorage.getItem('mg_voted_' + b) === String(epoch()) || !!(DATA.votes && DATA.votes[b] && DATA.votes[b][VOTER]);
+
+let reclaimingCandidate = false;
+async function reclaimCandidate(candidateId, select){
+  if (!candidateId || reclaimingCandidate) return;
+  reclaimingCandidate = true;
+  if (!confirm('Al continuar, los dispositivos que tengan la sesión anterior de esta candidata perderán el acceso. ¿Quieres continuar?')){
+    select.value = '';
+    reclaimingCandidate = false;
+    return;
+  }
+
+  select.disabled = true;
+  let originalCandidate;
+  let newId;
+  let awardChanges = [];
+  let voteChanges = [];
+  try{
+    const currentData = await DB.read();
+    originalCandidate = currentData.candidates && currentData.candidates[candidateId];
+    if (!originalCandidate || originalCandidate.id !== candidateId){
+      toast('La candidata ya no está disponible. Actualiza la página e inténtalo de nuevo.');
+      return;
+    }
+    do { newId = rid('c'); } while (currentData.candidates[newId]);
+
+    const updatedCandidate = {...originalCandidate, id:newId};
+    awardChanges = Object.entries(currentData.awards || {})
+      .filter(([, id]) => id === candidateId)
+      .map(([key, id]) => ({key, id}));
+    voteChanges = [];
+    Object.entries(currentData.votes || {}).forEach(([block, voters]) => {
+      Object.entries(voters || {}).forEach(([voter, vote]) => {
+        if (Object.values((vote && vote.a) || {}).includes(candidateId)){
+          voteChanges.push({block, voter, vote});
+        }
+      });
+    });
+
+    await DB.set('/candidates/' + newId, updatedCandidate);
+    for (const {key} of awardChanges) await DB.set('/awards/' + key, newId);
+    for (const {block, voter, vote} of voteChanges){
+      const answers = Object.fromEntries(Object.entries(vote.a).map(([key, id]) => [key, id === candidateId ? newId : id]));
+      await DB.set(`/votes/${block}/${voter}`, {...vote, a:answers});
+    }
+    await DB.set('/candidates/' + candidateId, null);
+
+    localStorage.setItem('mg_me', newId);
+    currentData.candidates[newId] = updatedCandidate;
+    delete currentData.candidates[candidateId];
+    awardChanges.forEach(({key}) => { currentData.awards[key] = newId; });
+    voteChanges.forEach(({block, voter, vote}) => {
+      const answers = Object.fromEntries(Object.entries(vote.a).map(([key, id]) => [key, id === candidateId ? newId : id]));
+      currentData.votes[block][voter] = {...vote, a:answers};
+    });
+
+    if (!await sync(true)){
+      DATA = currentData;
+      renderAll();
+    }
+    toast('Inscripción recuperada en este dispositivo');
+  }catch(e){
+    let rollbackFailed = false;
+    if (originalCandidate && newId){
+      try{ await DB.set('/candidates/' + candidateId, originalCandidate); }catch(error){ rollbackFailed = true; }
+      for (const {key, id} of awardChanges){
+        try{ await DB.set('/awards/' + key, id); }catch(error){ rollbackFailed = true; }
+      }
+      for (const {block, voter, vote} of voteChanges){
+        try{ await DB.set(`/votes/${block}/${voter}`, vote); }catch(error){ rollbackFailed = true; }
+      }
+      try{ await DB.set('/candidates/' + newId, null); }catch(error){ rollbackFailed = true; }
+    }
+    toast(rollbackFailed
+      ? 'No se pudo completar la recuperación ni restaurar todos los datos. Contacta con la organización.'
+      : 'No se pudo recuperar la inscripción. Inténtalo de nuevo.');
+  }finally{
+    reclaimingCandidate = false;
+    if (select.isConnected){ select.disabled = false; select.value = ''; }
+  }
+}
 
 function renderUrna(force){
   const vs = vstate();
-  const sig = JSON.stringify([vs, epoch(), vs !== 'closed' && hasVoted(vs), cands().map(c => c.id + c.name + c.country)]);
+  const myCandidateId = registeredCandidateId();
+  const sig = JSON.stringify([vs, epoch(), myCandidateId, vs !== 'closed' && hasVoted(vs), cands().map(c => c.id + c.name + c.country)]);
   renderIf('urna', sig, () => {
     const box = $('#urnaBox');
     if (vs === 'closed' || !VOTE_BLOCKS[vs]){
@@ -787,13 +877,35 @@ function renderUrna(force){
         <p class="silver-text">Urnas digitales blindadas a la espera de la Directora General</p></div>`;
       return;
     }
+    if (!myCandidateId){
+      draft = {};
+      const candidates = cands();
+      box.innerHTML = `<div class="glass empty">
+        Solo pueden votar los dispositivos inscritos como candidatas.
+        <button class="btn ghost" id="claimCandidateBtn" type="button" aria-controls="claimCandidatePicker" aria-expanded="false" ${reclaimingCandidate?'disabled':''}>¿Ya estas inscrito?</button>
+        <div id="claimCandidatePicker" hidden>
+          <label class="f" for="claimCandidateSelect">Selecciona tu candidatura</label>
+          <select id="claimCandidateSelect" ${candidates.length && !reclaimingCandidate ? '' : 'disabled'}>
+            <option value="">Selecciona candidata…</option>
+            ${candidates.map(c => `<option value="${esc(c.id)}">${esc(c.name)} — ${esc(c.country)}</option>`).join('')}
+          </select>
+        </div>
+      </div>`;
+      $('#claimCandidateBtn').addEventListener('click', () => {
+        const picker = $('#claimCandidatePicker');
+        picker.hidden = !picker.hidden;
+        $('#claimCandidateBtn').setAttribute('aria-expanded', String(!picker.hidden));
+      });
+      $('#claimCandidateSelect').addEventListener('change', e => reclaimCandidate(e.currentTarget.value, e.currentTarget));
+      return;
+    }
     if (hasVoted(vs)){
       box.innerHTML = `<div class="glass voted"><div class="badge"><span>✓</span> Voto Registrado Con Éxito</div>
         <p style="color:var(--steel);font-size:.82rem;margin:16px 0 0">${esc(VOTE_BLOCKS[vs].title)}<br>Gracias por participar. Esta urna solo admite un voto por persona.</p></div>`;
       return;
     }
-    const list = cands();
-    if (!list.length){ box.innerHTML = `<div class="glass empty">Aún no hay candidatas inscritas para votar.</div>`; return; }
+    const list = cands().filter(c => c.id !== myCandidateId);
+    if (!list.length){ box.innerHTML = `<div class="glass empty">No hay otras candidatas inscritas para votar.</div>`; return; }
     const opts = key => `<option value="">Selecciona candidata…</option>` + list.map(c =>
       `<option value="${c.id}" ${draft[key]===c.id?'selected':''}>${esc(c.name)} — ${esc(c.country)}</option>`).join('');
     const B = VOTE_BLOCKS[vs];
@@ -814,18 +926,41 @@ function renderUrna(force){
 async function sendVote(){
   const vs = vstate();
   const B = VOTE_BLOCKS[vs]; if (!B) return;
+  const myCandidateId = registeredCandidateId();
+  if (!myCandidateId) return toast('Solo pueden votar los dispositivos inscritos como candidatas');
   const answers = {};
   for (let i = 0; i < B.cats.length; i++){
     const v = draft[vs + '_' + i];
     if (!v) return toast('Falta elegir en: ' + B.cats[i][0]);
     answers['c' + i] = v;
   }
+  const eligibleIds = new Set(cands().filter(c => c.id !== myCandidateId).map(c => c.id));
+  if (Object.values(answers).some(id => !eligibleIds.has(id))){
+    renderUrna(true);
+    return toast('Debes elegir a otras candidatas inscritas');
+  }
   if (!confirm('¿Confirmas tu voto? No podrás cambiarlo.')) return;
   const btn = $('#sendVote'); btn.disabled = true;
   try{
-    await sync(true);                       // comprobar que la urna sigue abierta en este bloque
+    if (!await sync(true)){
+      toast('No se pudo comprobar el estado de la urna');
+      btn.disabled = false;
+      return;
+    }
     if (vstate() !== vs){ toast('La urna ha cambiado de estado'); btn.disabled = false; return; }
+    const currentCandidateId = registeredCandidateId();
+    if (!currentCandidateId){
+      renderUrna(true);
+      toast('Solo pueden votar los dispositivos inscritos como candidatas');
+      return;
+    }
     if (hasVoted(vs)){ renderUrna(true); return; }
+    const currentEligibleIds = new Set(cands().filter(c => c.id !== currentCandidateId).map(c => c.id));
+    if (Object.values(answers).some(id => !currentEligibleIds.has(id))){
+      renderUrna(true);
+      toast('La lista de candidatas ha cambiado; revisa tu voto');
+      return;
+    }
     await DB.set(`/votes/${vs}/${VOTER}`, {a: answers, t: Date.now()});
     localStorage.setItem('mg_voted_' + vs, String(epoch()));
     draft = {};
