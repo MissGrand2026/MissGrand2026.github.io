@@ -277,6 +277,10 @@ footer{text-align:center;margin-top:34px}
 .nav-btn.active svg{filter:drop-shadow(0 0 6px #fff)}
 .toast{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom));transform:translate(-50%,20px);opacity:0;z-index:99;background:rgba(18,20,29,.92);border:1px solid var(--silver);padding:12px 18px;border-radius:14px;font-size:.82rem;max-width:88%;text-align:center;transition:.35s;pointer-events:none;box-shadow:0 0 24px rgba(224,230,237,.25)}
 .toast.show{opacity:1;transform:translate(-50%,0)}
+.session-alert{position:fixed;inset:0;z-index:110;display:grid;place-items:center;padding:20px;background:rgba(0,0,0,.78)}
+.session-alert[hidden]{display:none}
+.session-alert .glass{width:min(100%,420px);margin:0;text-align:center}
+.session-alert p{font-size:.9rem;line-height:1.5;margin:0;color:var(--plat)}
 @media (prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}}
 </style>
 </head>
@@ -451,6 +455,13 @@ footer{text-align:center;margin-top:34px}
   <button class="nav-btn" data-tab="premios" hidden><svg viewBox="0 0 24 24"><path d="M12 3l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5-3.6-3.5 5-.7z"/></svg>Premios</button>
 </nav>
 <div class="toast" id="toast"></div>
+<div class="session-alert" id="sessionLostAlert" role="alertdialog" aria-modal="true" aria-labelledby="sessionLostMessage" hidden>
+  <div class="glass">
+    <p id="sessionLostMessage">Alguien ha iniciado sesión con tu candidata.
+       Se ha cerrado la sesión.</p>
+    <button class="btn" id="sessionLostAccept" type="button">Aceptar</button>
+  </div>
+</div>
 
 <script>
 /* =========================================================
@@ -736,12 +747,14 @@ function checkMyReg(){
   else{
     if (me){
       localStorage.removeItem('mg_me');
-      toast('Alguien ha iniciado sesión con tu candidata. Se ha cerrado la sesión.');
+      $('#sessionLostAlert').hidden = false;
+      $('#sessionLostAccept').focus();
     }
     $('#regDone').hidden = true;
     $('#regCard').hidden = false;
   }
 }
+$('#sessionLostAccept').addEventListener('click', () => { $('#sessionLostAlert').hidden = true; });
 
 /* =========================================================
    TAB 2 · CANDIDATAS
