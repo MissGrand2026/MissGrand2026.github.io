@@ -281,6 +281,8 @@ footer{text-align:center;margin-top:34px}
 .session-alert[hidden]{display:none}
 .session-alert .glass{width:min(100%,420px);margin:0;text-align:center}
 .session-alert p{font-size:.9rem;line-height:1.5;margin:0;color:var(--plat)}
+.session-alert-actions{display:flex;gap:10px}
+.session-alert-actions .btn{flex:1}
 @media (prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}}
 </style>
 </head>
@@ -460,6 +462,15 @@ footer{text-align:center;margin-top:34px}
     <p id="sessionLostMessage">Alguien ha iniciado sesión con tu candidata.
        Se ha cerrado la sesión.</p>
     <button class="btn" id="sessionLostAccept" type="button">Aceptar</button>
+  </div>
+</div>
+<div class="session-alert" id="candidateReclaimAlert" role="alertdialog" aria-modal="true" aria-labelledby="candidateReclaimMessage" hidden>
+  <div class="glass">
+    <p id="candidateReclaimMessage">Al continuar, los dispositivos que tengan la sesión anterior de esta candidata perderán el acceso. ¿Quieres continuar?</p>
+    <div class="session-alert-actions">
+      <button class="btn ghost" id="candidateReclaimCancel" type="button">Cancelar</button>
+      <button class="btn" id="candidateReclaimConfirm" type="button">Continuar</button>
+    </div>
   </div>
 </div>
 
@@ -794,10 +805,31 @@ const registeredCandidateId = () => {
 const hasVoted = b => localStorage.getItem('mg_voted_' + b) === String(epoch()) || !!(DATA.votes && DATA.votes[b] && DATA.votes[b][VOTER]);
 
 let reclaimingCandidate = false;
+let candidateReclaimConfirmation;
+function confirmCandidateReclaim(){
+  const alert = $('#candidateReclaimAlert');
+  return new Promise(resolve => {
+    candidateReclaimConfirmation = resolve;
+    alert.hidden = false;
+    $('#candidateReclaimCancel').focus();
+  });
+}
+function closeCandidateReclaimAlert(confirmed){
+  if (!candidateReclaimConfirmation) return;
+  const resolve = candidateReclaimConfirmation;
+  candidateReclaimConfirmation = null;
+  $('#candidateReclaimAlert').hidden = true;
+  resolve(confirmed);
+}
+$('#candidateReclaimCancel').addEventListener('click', () => closeCandidateReclaimAlert(false));
+$('#candidateReclaimConfirm').addEventListener('click', () => closeCandidateReclaimAlert(true));
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && candidateReclaimConfirmation) closeCandidateReclaimAlert(false);
+});
 async function reclaimCandidate(candidateId, select){
   if (!candidateId || reclaimingCandidate) return;
   reclaimingCandidate = true;
-  if (!confirm('Al continuar, los dispositivos que tengan la sesión anterior de esta candidata perderán el acceso. ¿Quieres continuar?')){
+  if (!await confirmCandidateReclaim()){
     select.value = '';
     reclaimingCandidate = false;
     return;
