@@ -1331,12 +1331,11 @@ function miniCard([key, emo, title]){
 }
 function sashCard([key, emo, title]){
   const p = personHTML(key);
-  return `<article class="award sash rv ${p.pending?'pending':''}"><div class="sash-in">
-    <span class="ribbon">★ OFFICIAL SASH AWARD ★</span>
+  return `<article class="award mini-card rv ${p.pending?'pending':''}">
     <div class="thumb">${p.photo}</div>
-    <div class="award-badge">${emo}</div>
-    <h3 class="silver-text">${esc(title)}</h3>
-    <div class="who">${p.who}</div>${selectHTML(key)}${draftTag(p)}</div></article>`;
+    <div class="txt"><div class="kind">Mención digital</div>
+      <h4 class="silver-text"><span class="emo">${emo}</span>${esc(title)}</h4>
+      <div class="who">${p.who}</div>${selectHTML(key)}</div>${draftTag(p)}</article>`;
 }
 function fireCard([key, emo, title]){
   const p = personHTML(key);
