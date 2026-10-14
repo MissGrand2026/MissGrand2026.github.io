@@ -564,6 +564,15 @@ const pad = n => String(n).padStart(2,'0');
 let toastT;
 function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2800); }
 const rid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+function uuid(){
+  if (crypto.randomUUID) return crypto.randomUUID();
+  if (!crypto.getRandomValues) throw new Error('El navegador no admite identificadores seguros');
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = [...bytes].map(b => b.toString(16).padStart(2,'0')).join('');
+  return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
+}
 
 const crown = (s=64) => `<svg class="crown" width="${s}" height="${s}" viewBox="0 0 64 64" fill="none">
   <path d="M8 46 L4 18 L20 30 L32 8 L44 30 L60 18 L56 46 Z" fill="url(#sg)" opacity=".92"/>
@@ -576,19 +585,38 @@ const DB = (() => {
   let activeLive = CONFIG.BACKEND === 'supabase';
   const modePath = '/config/liveMode';
   const LS = 'mg_db_' + CONFIG.ROOT;
-  const T = CONFIG.SUPABASE_URL.replace(/\/$/,'') + '/rest/v1/kv';
+  const API = CONFIG.SUPABASE_URL.replace(/\/$/,'') + '/rest/v1/';
+  const T = API + 'kv';
+  const C = API + 'candidatas';
+  const V = API + 'votos';
   const H = {
     apikey: CONFIG.SUPABASE_KEY,
     Authorization: 'Bearer ' + CONFIG.SUPABASE_KEY,
     'Content-Type': 'application/json'
   };
+  let migrationPromise;
   const lsRead = () => { try { return JSON.parse(localStorage.getItem(LS)) || {}; } catch { return {}; } };
+  async function expect(r, operation){
+    if (r.ok) return r;
+    const detail = await r.text();
+    throw new Error(`${operation} (${r.status})${detail ? ': ' + detail : ''}`);
+  }
+  async function uuidV5(name){
+    const namespace = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
+    const ns = namespace.replace(/-/g,'').match(/.{2}/g).map(x => parseInt(x,16));
+    const input = new Uint8Array([...ns, ...new TextEncoder().encode(name)]);
+    const digest = new Uint8Array(await crypto.subtle.digest('SHA-1', input));
+    digest[6] = (digest[6] & 0x0f) | 0x50;
+    digest[8] = (digest[8] & 0x3f) | 0x80;
+    const hex = [...digest.slice(0,16)].map(b => b.toString(16).padStart(2,'0')).join('');
+    return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
+  }
+  const isUuid = value => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value || '');
   async function refreshMode(){
     if (CONFIG.BACKEND !== 'supabase'){ activeLive = false; return; }
     if (!CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_KEY) throw new Error('Supabase no configurado');
     const q = new URLSearchParams({select:'value', path:'eq.' + modePath});
-    const r = await fetch(T + '?' + q, {headers:H, cache:'no-store'});
-    if(!r.ok) throw new Error('read mode');
+    const r = await expect(await fetch(T + '?' + q, {headers:H, cache:'no-store'}), 'No se pudo leer el modo live');
     const rows = await r.json();
     activeLive = !rows.length || rows[0].value !== false;
   }
@@ -599,17 +627,186 @@ const DB = (() => {
     const last = k[k.length-1];
     if (val === null) delete o[last]; else o[last] = val;
   }
+  function treeFromKv(rows){
+    const tree = {};
+    rows.sort((a,b) => a.path.split('/').length - b.path.split('/').length);
+    rows.forEach(row => setPath(tree, row.path, row.value));
+    return tree;
+  }
+  async function readKvRows(){
+    const r = await expect(await fetch(T + '?select=path,value', {headers:H, cache:'no-store'}), 'No se pudo leer kv');
+    return r.json();
+  }
+  async function writeKv(path, value){
+    const q = value === null
+      ? '?' + new URLSearchParams({or:`(path.eq.${path},path.like.${path}/*)`})
+      : '?on_conflict=path';
+    const r = value === null
+      ? await fetch(T + q, {method:'DELETE', headers:H})
+      : await fetch(T + q, {method:'POST', headers:{...H, Prefer:'resolution=merge-duplicates'}, body:JSON.stringify({path, value})});
+    await expect(r, 'No se pudo guardar en kv');
+  }
+  async function writeCandidate(path, value){
+    const parts = path.split('/').filter(Boolean);
+    const id = parts[1];
+    if (!isUuid(id)) throw new Error('El identificador de candidata no es UUID');
+    if (value === null){
+      const r = await fetch(C + '?' + new URLSearchParams({id:'eq.' + id}), {method:'DELETE', headers:H});
+      await expect(r, 'No se pudo eliminar la candidata');
+      return;
+    }
+    if (parts.length === 3 && parts[2] === 'photo'){
+      const r = await fetch(C + '?' + new URLSearchParams({id:'eq.' + id}), {method:'PATCH', headers:H, body:JSON.stringify({foto_url:value})});
+      await expect(r, 'No se pudo actualizar la foto');
+      return;
+    }
+    if (parts.length !== 2) throw new Error('Ruta de candidata no válida');
+    const row = {
+      id,
+      nombre_real:value.real,
+      nombre_miss:value.name,
+      delegacion:value.country,
+      foto_url:value.photo || null
+    };
+    if (Number.isFinite(value.ts)) row.created_at = new Date(value.ts).toISOString();
+    const r = await fetch(C + '?on_conflict=id', {
+      method:'POST',
+      headers:{...H, Prefer:'resolution=merge-duplicates'},
+      body:JSON.stringify(row)
+    });
+    await expect(r, 'No se pudo guardar la candidata');
+  }
+  async function writeVote(path, value){
+    const parts = path.split('/').filter(Boolean);
+    if (parts.length === 1){
+      const r = await fetch(V, {method:'DELETE', headers:H});
+      await expect(r, 'No se pudieron borrar los votos');
+      return;
+    }
+    if (parts.length !== 3) throw new Error('Ruta de voto no válida');
+    const [, block, voter] = parts;
+    const categories = VOTE_BLOCKS[block] && VOTE_BLOCKS[block].cats;
+    if (!categories) throw new Error('Bloque de votación no válido');
+    const filters = new URLSearchParams({bloque:'eq.' + block, usuario_id:'eq.' + voter});
+    if (value === null){
+      const r = await fetch(V + '?' + filters, {method:'DELETE', headers:H});
+      await expect(r, 'No se pudo eliminar el voto');
+      return;
+    }
+    const createdAt = Number.isFinite(value.t) ? new Date(value.t).toISOString() : new Date().toISOString();
+    const rows = Object.entries(value.a || {}).map(([key, candidateId]) => {
+      const match = /^c(\d+)$/.exec(key);
+      if (!match) throw new Error('El voto contiene una categoría no válida');
+      const index = Number(match[1]);
+      if (!categories[index] || !isUuid(candidateId)){
+        throw new Error('El voto contiene una categoría o candidata no válida');
+      }
+      const category = categories[index][0];
+      return {
+        id: '',
+        bloque:block,
+        categoria:category,
+        candidata_id:candidateId,
+        usuario_id:voter,
+        created_at:createdAt
+      };
+    });
+    for (const row of rows) row.id = await uuidV5(`vote:${block}:${voter}:${row.categoria}`);
+    if (!rows.length) throw new Error('No hay respuestas para guardar');
+    const r = await fetch(V + '?on_conflict=id', {
+      method:'POST',
+      headers:{...H, Prefer:'resolution=merge-duplicates'},
+      body:JSON.stringify(rows)
+    });
+    await expect(r, 'No se pudo guardar el voto');
+  }
+  async function migrateLegacyData(tree){
+    if (tree.migration && tree.migration.relationalV1 === true) return;
+    const ids = tree.migration && tree.migration.candidateIds || {};
+    const candidates = tree.candidates || {};
+    const idMap = new Map();
+    for (const [oldId, candidate] of Object.entries(candidates)){
+      const encoded = encodeURIComponent(oldId);
+      const id = ids[encoded] || (isUuid(oldId) ? oldId : await uuidV5('legacy-candidate:' + oldId));
+      idMap.set(oldId, id);
+      if (ids[encoded] !== id) await writeKv('/migration/candidateIds/' + encoded, id);
+      await writeCandidate('/candidates/' + id, {...candidate, id, photo:candidate.photo || null});
+    }
+    for (const [oldId, id] of Object.entries(ids)) idMap.set(decodeURIComponent(oldId), id);
+
+    for (const [key, oldId] of Object.entries(tree.awards || {})){
+      const id = idMap.get(oldId);
+      if (id && id !== oldId) await writeKv('/awards/' + key, id);
+    }
+    for (const [block, voters] of Object.entries(tree.votes || {})){
+      for (const [voter, vote] of Object.entries(voters || {})){
+        const answers = {};
+        for (const [key, oldId] of Object.entries(vote.a || {})){
+          const id = idMap.get(oldId) || (isUuid(oldId) ? oldId : null);
+          if (!id) throw new Error(`No se pudo migrar el voto ${block}: falta la candidata ${oldId}`);
+          answers[key] = id;
+        }
+        if (Object.keys(answers).length) await writeVote(`/votes/${block}/${voter}`, {a:answers, t:vote.t});
+      }
+    }
+    const legacy = await fetch(T + '?' + new URLSearchParams({or:'(path.like./candidates/*,path.like./votes/*)'}), {method:'DELETE', headers:H});
+    await expect(legacy, 'No se pudieron retirar los datos antiguos de kv');
+    await writeKv('/migration/relationalV1', true);
+    const localId = localStorage.getItem('mg_me');
+    const mappedLocalId = localId && idMap.get(localId);
+    if (mappedLocalId) localStorage.setItem('mg_me', mappedLocalId);
+  }
+  function relationalTree(candidateRows, voteRows){
+    const tree = {candidates:{}, votes:{}};
+    candidateRows.forEach(row => {
+      tree.candidates[row.id] = {
+        id:row.id,
+        real:row.nombre_real,
+        name:row.nombre_miss,
+        country:row.delegacion,
+        photo:row.foto_url,
+        ts:row.created_at ? Date.parse(row.created_at) : undefined
+      };
+    });
+    voteRows.forEach(row => {
+      const block = row.bloque;
+      const categoryIndex = VOTE_BLOCKS[block] && VOTE_BLOCKS[block].cats.findIndex(category => category[0] === row.categoria);
+      const key = categoryIndex >= 0 ? 'c' + categoryIndex : row.categoria;
+      tree.votes[block] = tree.votes[block] || {};
+      const vote = tree.votes[block][row.usuario_id] || {a:{}, t:row.created_at ? Date.parse(row.created_at) : 0};
+      if (row.candidata_id) vote.a[key] = row.candidata_id;
+      tree.votes[block][row.usuario_id] = vote;
+    });
+    return tree;
+  }
   return {
     get live(){ return activeLive; },
     async read(){
       if (CONFIG.BACKEND === 'supabase'){
         await refreshMode();
         if (!activeLive) return lsRead();
-        const r = await fetch(T + '?select=path,value', {headers:H, cache:'no-store'});
-        if(!r.ok) throw new Error('read');
-        const rows = await r.json();
-        rows.sort((a,b) => a.path.split('/').length - b.path.split('/').length);
-        const tree = {}; rows.forEach(row => setPath(tree, row.path, row.value));
+        const legacyRows = await readKvRows();
+        const legacyTree = treeFromKv(legacyRows);
+        if (!migrationPromise && !(legacyTree.migration && legacyTree.migration.relationalV1 === true)){
+          migrationPromise = migrateLegacyData(legacyTree).finally(() => { migrationPromise = null; });
+        }
+        if (migrationPromise) await migrationPromise;
+        const [kvRows, candidateResponse, voteResponse] = await Promise.all([
+          readKvRows(),
+          fetch(C + '?select=id,nombre_real,nombre_miss,delegacion,foto_url,created_at', {headers:H, cache:'no-store'}),
+          fetch(V + '?select=bloque,categoria,candidata_id,usuario_id,created_at', {headers:H, cache:'no-store'})
+        ]);
+        const [candidateRows, voteRows] = await Promise.all([
+          expect(candidateResponse, 'No se pudieron leer las candidatas').then(r => r.json()),
+          expect(voteResponse, 'No se pudieron leer los votos').then(r => r.json())
+        ]);
+        const tree = treeFromKv(kvRows);
+        const relational = relationalTree(candidateRows, voteRows);
+        tree.candidates = relational.candidates;
+        tree.votes = relational.votes;
+        const mappings = tree.migration && tree.migration.candidateIds || {};
+        const localId = localStorage.getItem('mg_me');
+        if (localId && mappings[encodeURIComponent(localId)]) localStorage.setItem('mg_me', mappings[encodeURIComponent(localId)]);
         return tree;
       }
       return lsRead();
@@ -617,14 +814,11 @@ const DB = (() => {
     async set(path, val){
       if (CONFIG.BACKEND === 'supabase' && (path === modePath || activeLive)){
         if (!CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_KEY) throw new Error('Supabase no configurado');
-        const r = val === null
-          ? await fetch(T + '?' + new URLSearchParams({or:`(path.eq.${path},path.like.${path}/*)`}), {method:'DELETE', headers:H})
-          : await fetch(T + '?on_conflict=path', {
-            method:'POST',
-            headers:{...H, Prefer:'resolution=merge-duplicates'},
-            body:JSON.stringify({path, value:val})
-          });
-        if(!r.ok) throw new Error('write');
+        if (path === modePath || path.startsWith('/config/') || path.startsWith('/awards/')) await writeKv(path, val);
+        else if (path === '/awards') await writeKv(path, val);
+        else if (path.startsWith('/candidates/')) await writeCandidate(path, val);
+        else if (path === '/votes' || path.startsWith('/votes/')) await writeVote(path, val);
+        else throw new Error('Ruta de datos no reconocida: ' + path);
       } else {
         const o = lsRead(); setPath(o, path, val);
         try { localStorage.setItem(LS, JSON.stringify(o)); } catch(e){ toast('Almacenamiento lleno'); throw e; }
@@ -726,7 +920,7 @@ $('#regForm').addEventListener('submit', async e => {
   const country = countrySuffix && $('.country-prefix').textContent.trim() + ' ' + countrySuffix;
   if (!real || !name || !country) return toast('Completa los tres campos');
   const btn = $('#regBtn'); btn.disabled = true;
-  const id = rid('c');
+  const id = uuid();
   try{
     const currentData = await DB.read();
     const normalizedCountry = normalizeCountry(country);
@@ -847,7 +1041,7 @@ async function reclaimCandidate(candidateId, select){
       toast('La candidata ya no está disponible. Actualiza la página e inténtalo de nuevo.');
       return;
     }
-    do { newId = rid('c'); } while (currentData.candidates[newId]);
+    do { newId = uuid(); } while (currentData.candidates[newId]);
 
     const updatedCandidate = {...originalCandidate, id:newId};
     awardChanges = Object.entries(currentData.awards || {})
@@ -1142,7 +1336,7 @@ $('#clearAwardsBtn').addEventListener('click', async () => {
 $('#demoBtn').addEventListener('click', async () => {
   const demo = [['Valentina Cruz','México'],['Camila Ríos','Argentina'],['Luna Ferrer','España'],['Sofía Blanco','Colombia'],['Aitana Vega','Chile'],['Nora Bellini','Italia'],['Ámbar Solís','Perú'],['Irene Duval','Francia']];
   try{
-    for (const [name,country] of demo){ const id = rid('c'); await DB.set('/candidates/'+id, {id, real:name, name, country, ts:Date.now()}); }
+    for (const [name,country] of demo){ const id = uuid(); await DB.set('/candidates/'+id, {id, real:name, name, country, ts:Date.now()}); }
     await sync(true); toast('Candidatas de ejemplo cargadas');
   }catch(e){ toast('Error'); }
 });
