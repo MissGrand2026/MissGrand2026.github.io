@@ -147,6 +147,7 @@ select option{background:#12141d;color:#fff}
 .sw button{padding:14px 8px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--plat);font:600 .68rem 'Montserrat',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:.2s}
 .sw button.active{background:var(--chrome);color:#0b0c10;border-color:#fff;box-shadow:0 0 20px rgba(255,255,255,.3)}
 .sw button.close{grid-column:1/-1}
+.sw button[data-v="final"]{grid-column:1/-1}
 .tab-visibility{display:grid;gap:10px}
 .tab-visibility-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.04);font-size:.78rem}
 .tab-visibility .tg{padding:0}
@@ -182,7 +183,15 @@ details.dr ol{margin:0 0 12px;padding-left:20px;font-size:.8rem;line-height:1.55
 .tg::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:var(--steel);transition:.3s}
 .tg.on{background:rgba(94,230,160,.2);border-color:var(--ok);box-shadow:0 0 16px rgba(94,230,160,.3)}
 .tg.on::after{left:29px;background:var(--chrome)}
+.tg:disabled{opacity:.45;cursor:not-allowed}
 .adminbar .tools{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.award-admin-controls{display:grid;gap:8px;margin-top:10px}
+.award-admin-controls .award-control-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.62rem;color:var(--steel)}
+.award-admin-controls .mini{font-size:.55rem;padding:7px 8px}
+.award-admin-controls .tg{transform:scale(.82);transform-origin:right center;margin-left:auto}
+.award-tie{display:block;color:#ffd27a;font-size:.6rem;letter-spacing:.08em;margin:2px 0 5px}
+.winner-name{display:block;margin-top:4px}
+.final-tie-status{margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.04);font-size:.75rem;color:var(--steel)}
 
 .block{margin-top:34px}
 .block-head{text-align:center;margin-bottom:14px}
@@ -198,13 +207,16 @@ details.dr ol{margin:0 0 12px;padding-left:20px;font-size:.8rem;line-height:1.55
 .award .thumb{position:relative;overflow:hidden;background:linear-gradient(160deg,#1a1d2b,#0d0f17);display:grid;place-items:center}
 .award .thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .award .thumb .sil{position:absolute;bottom:-8%;left:50%;transform:translateX(-50%);width:80%;opacity:.12}
+.award .thumb.tied-thumb{overflow:hidden}
+.winner-slices{position:relative;width:100%;height:100%;background:#11131b}
+.winner-slices img,.winner-slice-placeholder{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.winner-slice-placeholder{display:grid;place-items:center;background:linear-gradient(145deg,#292d3c,#11131b)}
+.winner-slice-placeholder .crown{width:34%;height:auto}
+.winner-slices .slice-lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.winner-slices .slice-lines rect,.winner-slices .slice-lines path{fill:none;stroke:rgba(255,255,255,.9);stroke-width:1.1;vector-effect:non-scaling-stroke}
 .award .who b{display:block;font-family:'Cinzel',serif;color:var(--white)}
 .award .who small{display:block;margin-top:3px;font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--steel)}
 .award.pending .who b{letter-spacing:.3em;color:var(--steel)}
-.draft-tag{position:absolute;top:8px;right:8px;z-index:3;font-size:.5rem;letter-spacing:.16em;text-transform:uppercase;padding:3px 7px;border-radius:99px;background:rgba(255,210,122,.15);border:1px solid #ffd27a;color:#ffd27a}
-.award select{width:100%;margin-top:10px;padding:10px;border-radius:10px;border:1px dashed rgba(224,230,237,.4);background:rgba(8,9,14,.75);color:#fff;font:500 .72rem 'Montserrat',sans-serif}
-.award select option{background:#12141d}
-
 .mini-card{display:flex;gap:12px;align-items:center;padding:10px;margin-bottom:10px}
 .mini-card .thumb{width:62px;height:78px;border-radius:12px;flex:none;border:1px solid rgba(192,192,192,.35)}
 .mini-card .txt{flex:1;min-width:0}
@@ -379,12 +391,10 @@ footer{text-align:center;margin-top:34px}
     <div class="banner" id="banner" hidden>✦ Los resultados se revelarán durante la gala ✦</div>
     <div class="adminbar" id="adminBar" hidden>
       <div class="row">
-        <div><b>Publicar Resultados</b><small id="pubHint">Borrador: solo tú ves los nombres</small></div>
-        <div class="tg" id="pubToggle" role="switch" aria-checked="false" tabindex="0"></div>
+        <div><b>Resultados automáticos</b><small>Publica cada premio y su ganadora por separado</small></div>
       </div>
       <div class="tools">
         <button class="mini" id="demoBtn" type="button">Cargar candidatas de ejemplo</button>
-        <button class="mini danger" id="clearAwardsBtn" type="button">Vaciar premios</button>
       </div>
     </div>
     <div id="premiosRoot"></div>
@@ -433,7 +443,7 @@ footer{text-align:center;margin-top:34px}
 
       <div class="glass">
         <h3 style="font-size:.95rem;letter-spacing:.14em;margin-bottom:6px">Premios &amp; Cuadro de Honor</h3>
-        <p class="sec-sub" style="text-align:left">Asigna cada premio y publica los resultados desde la pestaña Premios</p>
+        <p class="sec-sub" style="text-align:left">Los premios se calculan con los votos. Desde la pestaña Premios controlas cuándo aparece cada premio y cuándo se publica su ganadora.</p>
         <button class="btn ghost" id="goPremios" type="button">Ir a Premios &amp; Cuadro de Honor</button>
       </div>
 
@@ -535,6 +545,9 @@ const VOTE_BLOCKS = {
     ['PREMIO ESPECIAL','¿Quién ha demostrado ser la más descarada, la que se come la cámara y la auténtica dueña de la noche?']]}
 };
 const VOTE_BLOCK_KEYS = Object.keys(VOTE_BLOCKS);
+const FINAL_TIE_VOTE = { title:'Votación excepcional · Desempate final', cats:[
+  ['Desempate final','¿Quién debe ganar entre las candidatas empatadas?']
+]};
 
 function normalizeVoteBlocks(data){
   const votes = data.votes;
@@ -581,6 +594,12 @@ const AWARD_FINAL = {
   second:['f_2','🥉','2ª Finalista'],
   first:['f_1','🥈','1ª Finalista / Virreina'],
   queen:['f_queen','👑','MISS GRAND 2026']
+};
+const AWARD_VOTE_MAP = {
+  b1_mirada:['b1',3], b1_atuendo:['b1',2], b1_elegancia:['b1',0], b1_sash:['b1',1],
+  b2_diplomatica:['b2',3], b2_ingenio:['b2',0], b2_divertido:['b2',2], b2_sash:['b2',1],
+  b3_absurdo:['b3',1], b3_improv:['b3',2], b3_icono:['b3',3], b3_sash:['b3',0],
+  f_puta:['b4',0]
 };
 
 /* =========================================================
@@ -836,7 +855,8 @@ const DB = (() => {
     });
     voteRows.forEach(row => {
       const block = row.bloque;
-      const categoryIndex = VOTE_BLOCKS[block] && VOTE_BLOCKS[block].cats.findIndex(category => category[0] === row.categoria);
+      const categories = VOTE_BLOCKS[block] && VOTE_BLOCKS[block].cats;
+      const categoryIndex = categories && categories.findIndex(category => category[0] === row.categoria);
       const key = categoryIndex >= 0 ? 'c' + categoryIndex : row.categoria;
       const voterId = legacyVoter && row.usuario_id === legacyVoter.legacyVoterId
         ? legacyVoter.candidateId
@@ -902,9 +922,8 @@ const cands = () => Object.values(DATA.candidates || {}).sort((a,b) =>
   (a.country||'').localeCompare(b.country||'','es',{sensitivity:'base'}) || (a.name||'').localeCompare(b.name||'','es',{sensitivity:'base'}));
 const vstate = () => (DATA.config && DATA.config.voting) || 'closed';
 const epoch  = () => (DATA.config && DATA.config.epoch) || 0;
-const published = () => !!(DATA.config && DATA.config.published);
+const finalTieRound = () => (DATA.config && DATA.config.finalTieRound) || 0;
 const isAdmin = () => sessionStorage.getItem('mg_admin') === '1';
-const winnerOf = key => { const id = DATA.awards && DATA.awards[key]; return id && DATA.candidates ? DATA.candidates[id] : null; };
 const PUBLIC_TABS = [
   {id:'candidatas', label:'Candidatas'},
   {id:'gala', label:'Gala'},
@@ -1069,9 +1088,16 @@ const registeredCandidateId = () => {
 };
 const hasVoted = (b, candidateId = registeredCandidateId()) => {
  if (!candidateId) return false;
- const localMark = localStorage.getItem(`mg_voted_${b}_${candidateId}`);
- return localMark === String(epoch()) || !!(DATA.votes && DATA.votes[b] && DATA.votes[b][candidateId]);
+ const localMark = localStorage.getItem(b === 'final'
+   ? `mg_voted_final_${finalTieRound()}_${candidateId}`
+   : `mg_voted_${b}_${candidateId}`);
+ const remoteVote = b === 'final'
+   ? DATA.config && DATA.config.finalTieVotes && DATA.config.finalTieVotes[candidateId]
+   : DATA.votes && DATA.votes[b] && DATA.votes[b][candidateId];
+ return localMark === String(epoch()) || !!remoteVote;
 };
+const activeVoteBlock = () => finalTieVoting() && finalistTieGroup().length > 1 ? 'final' : vstate();
+const voteBlockFor = block => block === 'final' ? FINAL_TIE_VOTE : VOTE_BLOCKS[block];
 
 let reclaimingCandidate = false;
 let candidateReclaimConfirmation;
@@ -1107,6 +1133,7 @@ async function reclaimCandidate(candidateId, select){
   select.disabled = true;
   let originalCandidate;
   let newId;
+  let finalTieVote;
   let awardChanges = [];
   let voteChanges = [];
   try{
@@ -1135,6 +1162,7 @@ async function reclaimCandidate(candidateId, select){
         }
       });
     });
+    finalTieVote = currentData.config && currentData.config.finalTieVotes && currentData.config.finalTieVotes[candidateId];
 
     await DB.set('/candidates/' + newId, updatedCandidate);
     for (const {key} of awardChanges) await DB.set('/awards/' + key, newId);
@@ -1142,6 +1170,10 @@ async function reclaimCandidate(candidateId, select){
       const answers = Object.fromEntries(Object.entries(vote.a).map(([key, id]) => [key, id === candidateId ? newId : id]));
       await DB.set(`/votes/${block}/${newVoter}`, {...vote, a:answers});
       if (newVoter !== voter) await DB.set(`/votes/${block}/${voter}`, null);
+    }
+    if (finalTieVote){
+      await DB.set('/config/finalTieVotes/' + newId, finalTieVote);
+      await DB.set('/config/finalTieVotes/' + candidateId, null);
     }
     await DB.set('/candidates/' + candidateId, null);
 
@@ -1154,6 +1186,10 @@ async function reclaimCandidate(candidateId, select){
       if (newVoter !== voter) delete currentData.votes[block][voter];
       currentData.votes[block][newVoter] = {...vote, a:answers};
     });
+    if (finalTieVote){
+      currentData.config.finalTieVotes[newId] = finalTieVote;
+      delete currentData.config.finalTieVotes[candidateId];
+    }
 
     if (!await sync(true)){
       DATA = currentData;
@@ -1173,6 +1209,12 @@ async function reclaimCandidate(candidateId, select){
           if (newVoter !== voter) await DB.set(`/votes/${block}/${newVoter}`, null);
         }catch(error){ rollbackFailed = true; }
       }
+      if (finalTieVote){
+        try{
+          await DB.set('/config/finalTieVotes/' + candidateId, finalTieVote);
+          await DB.set('/config/finalTieVotes/' + newId, null);
+        }catch(error){ rollbackFailed = true; }
+      }
       try{ await DB.set('/candidates/' + newId, null); }catch(error){ rollbackFailed = true; }
     }
     toast(rollbackFailed
@@ -1185,12 +1227,14 @@ async function reclaimCandidate(candidateId, select){
 }
 
 function renderUrna(force){
-  const vs = vstate();
+  const vs = activeVoteBlock();
   const myCandidateId = registeredCandidateId();
-  const sig = JSON.stringify([vs, epoch(), myCandidateId, vs !== 'closed' && hasVoted(vs), cands().map(c => c.id + c.name + c.country)]);
+  const tieIds = finalistTieGroup().map(candidate => candidate.id);
+  const sig = JSON.stringify([vs, epoch(), finalTieRound(), myCandidateId, vs !== 'closed' && hasVoted(vs), tieIds, cands().map(c => c.id + c.name + c.country)]);
   renderIf('urna', sig, () => {
     const box = $('#urnaBox');
-    if (vs === 'closed' || !VOTE_BLOCKS[vs]){
+    const B = voteBlockFor(vs);
+    if (vs === 'closed' || !B){
       draft = {};
       box.innerHTML = `<div class="glass lock">
         <svg width="120" height="140" viewBox="0 0 120 140" fill="none">
@@ -1225,15 +1269,15 @@ function renderUrna(force){
     }
     if (hasVoted(vs)){
       box.innerHTML = `<div class="glass voted"><div class="badge"><span>✓</span> Voto Registrado Con Éxito</div>
-        <p style="color:var(--steel);font-size:.82rem;margin:16px 0 0">${esc(VOTE_BLOCKS[vs].title)}<br>Gracias por participar. Esta urna solo admite un voto por persona.</p></div>`;
+        <p style="color:var(--steel);font-size:.82rem;margin:16px 0 0">${esc(B.title)}<br>Gracias por participar. Esta urna solo admite un voto por persona.</p></div>`;
       return;
     }
-    const list = cands().filter(c => c.id !== myCandidateId);
+    const eligible = vs === 'final' ? finalistTieGroup() : cands();
+    const list = eligible.filter(c => c.id !== myCandidateId);
     if (!list.length){ box.innerHTML = `<div class="glass empty">No hay otras candidatas inscritas para votar.</div>`; return; }
     const opts = key => `<option value="">Selecciona candidata…</option>` + list.map(c =>
       `<option value="${c.id}" ${draft[key]===c.id?'selected':''}>${esc(c.name)} — ${esc(c.country)}</option>`).join('');
-    const B = VOTE_BLOCKS[vs];
-    box.innerHTML = `<div style="text-align:center;margin-bottom:6px"><span class="blockpill">Votación activa</span></div>
+    box.innerHTML = `<div style="text-align:center;margin-bottom:6px"><span class="blockpill">${vs === 'final'?'Desempate final':'Votación activa'}</span></div>
       <p class="sec-sub" style="margin-top:10px">${esc(B.title)}</p>` +
       B.cats.map((c,i) => `<div class="glass cat ${c[2]?'special':''}">
         ${c[2] ? '<span class="tagsp">VOTO ESPECIAL</span>' : ''}
@@ -1248,8 +1292,8 @@ function renderUrna(force){
 }
 
 async function sendVote(){
-  const vs = vstate();
-  const B = VOTE_BLOCKS[vs]; if (!B) return;
+  const vs = activeVoteBlock();
+  const B = voteBlockFor(vs); if (!B) return;
   const myCandidateId = registeredCandidateId();
   if (!myCandidateId) return toast('Solo pueden votar los dispositivos inscritos como candidatas');
   const answers = {};
@@ -1258,7 +1302,8 @@ async function sendVote(){
     if (!v) return toast('Falta elegir en: ' + B.cats[i][0]);
     answers['c' + i] = v;
   }
-  const eligibleIds = new Set(cands().filter(c => c.id !== myCandidateId).map(c => c.id));
+  const eligible = vs === 'final' ? finalistTieGroup() : cands();
+  const eligibleIds = new Set(eligible.filter(c => c.id !== myCandidateId).map(c => c.id));
   if (Object.values(answers).some(id => !eligibleIds.has(id))){
     renderUrna(true);
     return toast('Debes elegir a otras candidatas inscritas');
@@ -1271,7 +1316,7 @@ async function sendVote(){
       btn.disabled = false;
       return;
     }
-    if (vstate() !== vs){ toast('La urna ha cambiado de estado'); btn.disabled = false; return; }
+    if (activeVoteBlock() !== vs){ toast('La urna ha cambiado de estado'); btn.disabled = false; return; }
     const currentCandidateId = registeredCandidateId();
     if (!currentCandidateId){
       renderUrna(true);
@@ -1284,14 +1329,19 @@ async function sendVote(){
       return;
     }
     if (hasVoted(vs)){ renderUrna(true); return; }
-    const currentEligibleIds = new Set(cands().filter(c => c.id !== currentCandidateId).map(c => c.id));
+    const currentEligible = vs === 'final' ? finalistTieGroup() : cands();
+    const currentEligibleIds = new Set(currentEligible.filter(c => c.id !== currentCandidateId).map(c => c.id));
     if (Object.values(answers).some(id => !currentEligibleIds.has(id))){
       renderUrna(true);
-      toast('La lista de candidatas ha cambiado; revisa tu voto');
+      toast(vs === 'final' ? 'La lista de candidatas empatadas ha cambiado; revisa tu voto' : 'La lista de candidatas ha cambiado; revisa tu voto');
       return;
     }
-    await DB.set(`/votes/${vs}/${currentCandidateId}`, {a: answers, t: Date.now()});
-    localStorage.setItem(`mg_voted_${vs}_${currentCandidateId}`, String(epoch()));
+    const votePath = vs === 'final' ? `/config/finalTieVotes/${currentCandidateId}` : `/votes/${vs}/${currentCandidateId}`;
+    await DB.set(votePath, {a: answers, t: Date.now()});
+    const localMarkKey = vs === 'final'
+      ? `mg_voted_final_${finalTieRound()}_${currentCandidateId}`
+      : `mg_voted_${vs}_${currentCandidateId}`;
+    localStorage.setItem(localMarkKey, String(epoch()));
     draft = {};
     await sync(true); renderUrna(true);
     toast('¡Voto registrado!');
@@ -1301,59 +1351,215 @@ async function sendVote(){
 /* =========================================================
    TAB 5 · PREMIOS & CUADRO DE HONOR
    ========================================================= */
-const reveal = () => published() || isAdmin();
+const awardVisible = key => !!(DATA.config && DATA.config.awardVisible && DATA.config.awardVisible[key]);
+const awardPublished = key => !!(DATA.config && DATA.config.awardPublished && DATA.config.awardPublished[key]);
+const finalTieVoting = () => !!(DATA.config && DATA.config.finalTieVoting);
+
+function categoryWinnerIds(block, index){
+  const counts = {};
+  Object.values((DATA.votes && DATA.votes[block]) || {}).forEach(vote => {
+    const id = vote && vote.a && vote.a['c' + index];
+    if (id && DATA.candidates && DATA.candidates[id]) counts[id] = (counts[id] || 0) + 1;
+  });
+  const max = Math.max(0, ...Object.values(counts));
+  return max ? Object.keys(counts).filter(id => counts[id] === max) : [];
+}
+
+function finalistBaseGroups(){
+  const candidates = cands();
+  const stats = Object.fromEntries(candidates.map(candidate => [candidate.id, {candidate, votes:0, awards:0}]));
+  ['b1','b2','b3'].forEach(block => {
+    Object.values((DATA.votes && DATA.votes[block]) || {}).forEach(vote => {
+      Object.values((vote && vote.a) || {}).forEach(id => {
+        if (stats[id]) stats[id].votes++;
+      });
+    });
+  });
+  Object.entries(AWARD_VOTE_MAP).filter(([key]) => key !== 'f_puta').forEach(([, [block, category]]) => {
+    categoryWinnerIds(block, category).forEach(id => { if (stats[id]) stats[id].awards++; });
+  });
+  const ranked = Object.values(stats).sort((a,b) =>
+    b.votes - a.votes || b.awards - a.awards ||
+    (a.candidate.name || '').localeCompare(b.candidate.name || '', 'es')
+  );
+  const groups = [];
+  ranked.forEach(stat => {
+    const last = groups[groups.length - 1];
+    if (last && last.votes === stat.votes && last.awards === stat.awards) last.candidates.push(stat.candidate);
+    else groups.push({votes:stat.votes, awards:stat.awards, candidates:[stat.candidate]});
+  });
+  return groups;
+}
+
+function finalistTieGroup(){
+  const groups = finalistBaseGroups();
+  if (!groups.some(group => group.votes || group.awards)) return [];
+  let position = 0;
+  for (const group of groups){
+    if (position < 3 && group.candidates.length > 1) return group.candidates;
+    position += group.candidates.length;
+  }
+  return [];
+}
+
+function finalistGroups(){
+  const groups = finalistBaseGroups();
+  if (!groups.some(group => group.votes || group.awards)) return [];
+  const tieGroup = finalistTieGroup();
+  if (!tieGroup.length || finalTieVoting()) return groups;
+  const tieIds = new Set(tieGroup.map(candidate => candidate.id));
+  const tieVotes = {};
+  Object.values((DATA.config && DATA.config.finalTieVotes) || {}).forEach(vote => {
+    const id = vote && vote.a && vote.a.c0;
+    if (tieIds.has(id)) tieVotes[id] = (tieVotes[id] || 0) + 1;
+  });
+  const split = [];
+  groups.forEach(group => {
+    if (group.candidates.length < 2 || !group.candidates.some(candidate => tieIds.has(candidate.id))) {
+      split.push(group);
+      return;
+    }
+    const byVotes = {};
+    group.candidates.forEach(candidate => {
+      const count = tieVotes[candidate.id] || 0;
+      (byVotes[count] = byVotes[count] || []).push(candidate);
+    });
+    Object.keys(byVotes).map(Number).sort((a,b) => b-a).forEach(count =>
+      split.push({votes:group.votes, awards:group.awards, candidates:byVotes[count]})
+    );
+  });
+  return split;
+}
+
+function awardWinnerIds(key){
+  if (AWARD_VOTE_MAP[key]) return categoryWinnerIds(...AWARD_VOTE_MAP[key]);
+  const index = key === 'f_queen' ? 0 : key === 'f_1' ? 1 : 2;
+  const group = finalistGroups()[index];
+  return group ? group.candidates.map(candidate => candidate.id) : [];
+}
+
+function winnerSlicesHTML(winners){
+  const count = winners.length;
+  const sectors = winners.map((winner,index) => {
+    const start = -90 + 360 * index / count;
+    const end = -90 + 360 * (index + 1) / count;
+    const points = ['50% 50%'];
+    const steps = Math.max(2, Math.ceil((end - start) / 5));
+    const edgePoint = angle => {
+      const radians = angle * Math.PI / 180;
+      const dx = Math.cos(radians), dy = Math.sin(radians);
+      const distance = Math.min(50 / Math.abs(dx || Number.EPSILON), 50 / Math.abs(dy || Number.EPSILON));
+      return [50 + distance * dx, 50 + distance * dy];
+    };
+    points.push(edgePoint(start).map(value => value.toFixed(2) + '%').join(' '));
+    for (let step = 1; step <= steps; step++){
+      const angle = start + (end - start) * step / steps;
+      points.push(edgePoint(angle).map(value => value.toFixed(2) + '%').join(' '));
+    }
+    const clip = `polygon(${points.join(',')})`;
+    return winner.photo
+      ? `<img alt="${esc(winner.name)}" loading="lazy" src="${winner.photo}" style="clip-path:${clip}">`
+      : `<span class="winner-slice-placeholder" style="clip-path:${clip}" aria-label="${esc(winner.name)}">${crown(36)}</span>`;
+  }).join('');
+  const lines = winners.map((winner,index) => {
+    const angle = (-90 + 360 * index / count) * Math.PI / 180;
+    const dx = Math.cos(angle), dy = Math.sin(angle);
+    const distance = Math.min(50 / Math.abs(dx || Number.EPSILON), 50 / Math.abs(dy || Number.EPSILON));
+    const x = (50 + distance * dx).toFixed(2);
+    const y = (50 + distance * dy).toFixed(2);
+    return `<path d="M50 50 L${x} ${y}"/>`;
+  }).join('');
+  return `<div class="winner-slices" role="img" aria-label="${winners.length} candidatas empatadas">${sectors}<svg class="slice-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><rect x=".5" y=".5" width="99" height="99"/><g>${lines}</g></svg></div>`;
+}
 
 function personHTML(key){
-  const w = winnerOf(key);
-  if (!w) return { photo: silhouette + crown(46), who: `<b>${isAdmin() ? 'Sin asignar' : 'Por anunciar'}</b><small>Delegación / País</small>`, pending:true, draft:false, has:false };
-  if (!reveal()) return { photo: silhouette + crown(46), who: `<b>· · · · ·</b><small>Se revelará en la gala</small>`, pending:true, draft:false, has:true };
+  const winners = awardWinnerIds(key).map(id => DATA.candidates && DATA.candidates[id]).filter(Boolean);
+  if (!winners.length){
+    return {
+      photo:silhouette + crown(46),
+      who:`<b>${isAdmin() ? 'Sin votos' : 'Por anunciar'}</b><small>${isAdmin() ? 'Ganadora pendiente' : 'Ganadora aún no revelada'}</small>`,
+      pending:true, has:false
+    };
+  }
+  if (key === 'f_queen' && winners.length > 1 && !isAdmin() && !awardPublished(key)){
+    return {
+      photo:winnerSlicesHTML(winners),
+      who:`<b>Empate entre varias candidatas</b><small>${finalTieVoting()?'Votación de desempate abierta':'Votación de desempate pendiente'}</small>`,
+      pending:true, has:true, tied:true
+    };
+  }
+  if (!isAdmin() && !awardPublished(key)){
+    return {photo:silhouette + crown(46), who:'<b>Por anunciar</b><small>Ganadora aún no revelada</small>', pending:true, has:true};
+  }
+  const first = winners[0];
+  const photo = winners.length > 1
+    ? winnerSlicesHTML(winners)
+    : first.photo ? `<img alt="${esc(first.name)}" loading="lazy" src="${first.photo}">` : silhouette + crown(46);
+  const names = winners.map(winner => `<span class="winner-name"><b>${esc(winner.name)}</b><small>${esc(winner.country)}</small></span>`).join('');
+  const tieLabel = key === 'f_queen'
+    ? `EMPATE · VOTACIÓN DE DESEMPATE ${finalTieVoting()?'ABIERTA':'PENDIENTE'}`
+    : key === 'f_1' || key === 'f_2'
+      ? `EMPATE EN CLASIFICACIÓN ${finalTieVoting()?'· DESEMPATE ABIERTO':''}`
+      : 'GANADORAS POR EMPATE';
+  const tie = winners.length > 1 ? `<span class="award-tie">${tieLabel}</span>` : '';
   return {
-    photo: w.photo ? `<img alt="${esc(w.name)}" loading="lazy" src="${w.photo}">` : silhouette + crown(46),
-    who: `<b>${esc(w.name)}</b><small>${esc(w.country)}</small>`,
-    pending:false, draft: isAdmin() && !published(), has:true
+    photo,
+    who:tie + names, pending:false, has:true, tied:winners.length > 1
   };
 }
-function selectHTML(key){
+
+const awardThumb = person => `<div class="thumb ${person.tied?'tied-thumb':''}">${person.photo}</div>`;
+
+function awardControls(key, title){
   if (!isAdmin()) return '';
-  const cur = DATA.awards && DATA.awards[key];
-  return `<select data-key="${key}"><option value="">— Sin asignar —</option>` +
-    cands().map(c => `<option value="${c.id}" ${cur===c.id?'selected':''}>${esc(c.name)} — ${esc(c.country)}</option>`).join('') + `</select>`;
+  const visible = awardVisible(key);
+  const revealed = awardPublished(key);
+  const hasWinner = awardWinnerIds(key).length > 0;
+  return `<div class="award-admin-controls">
+    <div class="award-control-row">
+      <span>Visibilidad del premio</span>
+      <button class="tg ${visible?'on':''}" type="button" role="switch" aria-label="Mostrar premio ${esc(title)}" aria-checked="${visible}" data-visible-award="${key}"></button>
+    </div>
+    <div class="award-control-row">
+      <span>Publicar ganadora</span>
+      <button class="tg ${revealed?'on':''}" type="button" role="switch" aria-label="Publicar ganadora de ${esc(title)}" aria-checked="${revealed}" data-publish-award="${key}" ${!visible || !hasWinner?'disabled':''}></button>
+    </div>
+  </div>`;
 }
-const draftTag = p => p.draft && p.has ? `<span class="draft-tag">Borrador</span>` : '';
 
 function miniCard([key, emo, title]){
   const p = personHTML(key);
   return `<article class="award mini-card rv ${p.pending?'pending':''}">
-    <div class="thumb">${p.photo}</div>
+    ${awardThumb(p)}
     <div class="txt"><div class="kind">Mención digital</div>
       <h4 class="silver-text"><span class="emo">${emo}</span>${esc(title)}</h4>
-      <div class="who">${p.who}</div>${selectHTML(key)}</div>${draftTag(p)}</article>`;
+      <div class="who">${p.who}</div>${awardControls(key,title)}</div></article>`;
 }
 function sashCard([key, emo, title]){
   const p = personHTML(key);
   return `<article class="award mini-card rv ${p.pending?'pending':''}">
-    <div class="thumb">${p.photo}</div>
+    ${awardThumb(p)}
     <div class="txt"><div class="kind">Mención digital</div>
       <h4 class="silver-text"><span class="emo">${emo}</span>${esc(title)}</h4>
-      <div class="who">${p.who}</div>${selectHTML(key)}</div>${draftTag(p)}</article>`;
+      <div class="who">${p.who}</div>${awardControls(key,title)}</div></article>`;
 }
 function fireCard([key, emo, title]){
   const p = personHTML(key);
   return `<article class="award sash fire rv ${p.pending?'pending':''}"><div class="sash-in">
     <span class="ribbon">🔥 BANDA DE HONOR ESPECIAL 🔥</span>
-    <div class="thumb">${p.photo}</div>
+    ${awardThumb(p)}
     <div class="award-badge">${emo}</div>
     <h3>${esc(title)}</h3>
     <div class="kind" style="font-size:.62rem;letter-spacing:.2em;color:#ffb347;text-transform:uppercase;margin-bottom:10px">La reina de la fiesta y la actitud</div>
-    <div class="who">${p.who}</div>${selectHTML(key)}${draftTag(p)}</div></article>`;
+    <div class="who">${p.who}</div>${awardControls(key,title)}</div></article>`;
 }
 function podCard([key, emo, title], cls){
   const p = personHTML(key);
   return `<article class="award pod ${cls} rv ${p.pending?'pending':''}">
-    <div class="thumb">${p.photo}</div>
+    ${awardThumb(p)}
     <div class="medal">${emo}</div>
     <h4 class="silver-text">${esc(title)}</h4>
-    <div class="who">${p.who}</div>${selectHTML(key)}${draftTag(p)}</article>`;
+    <div class="who">${p.who}</div>${awardControls(key,title)}</article>`;
 }
 function queenCard([key, emo, title]){
   const p = personHTML(key);
@@ -1362,10 +1568,10 @@ function queenCard([key, emo, title]){
     ${sparks}
     <div class="crownbig">${emo}</div>
     <span class="ribbon">✦ LA REINA CORONADA ✦</span>
-    <div class="thumb">${p.photo}</div>
+    ${awardThumb(p)}
     <h3>${esc(title)}</h3>
     <div class="who">${p.who}</div>
-    ${selectHTML(key)}${draftTag(p)}</div></article>`;
+    ${awardControls(key,title)}</div></article>`;
 }
 
 let ioAwards;
@@ -1377,50 +1583,69 @@ function observeAwards(){
 }
 
 function renderPremios(force){
-  const sig = JSON.stringify([isAdmin(), published(), DATA.awards || {}, cands().map(c => c.id+c.name+c.country+(c.photo||'').slice(-8))]);
+  const sig = JSON.stringify([isAdmin(), DATA.config || {}, DATA.votes || {}, cands().map(c => c.id+c.name+c.country+(c.photo||'').slice(-8))]);
   renderIf('premios', sig, () => {
     const admin = isAdmin();
+    const allKeys = [...AWARD_BLOCKS.flatMap(block => [...block.mentions,block.sash].map(item => item[0])), ...Object.values(AWARD_FINAL).map(item => item[0])];
+    const hasVisibleAwards = allKeys.some(awardVisible);
     $('#adminBar').hidden = !admin;
-    $('#banner').hidden = published() || admin;
-    const tg = $('#pubToggle'); tg.classList.toggle('on', published()); tg.setAttribute('aria-checked', published());
-    $('#pubHint').textContent = published() ? 'Publicado: todos ven los nombres' : 'Borrador: solo tú ves los nombres';
-
-    const html = AWARD_BLOCKS.map(b => `
-      <section class="block">
-        <div class="block-head rv"><small>Bloque ${b.n}</small><h2 class="silver-text">${esc(b.title)}</h2><div class="rule"></div></div>
-        ${b.mentions.map(miniCard).join('')}
-        ${sashCard(b.sash)}
-      </section>`).join('') + `
-      <section class="climax">
-        <div class="climax-title rv"><h2 class="gold-text">EL GRAN CUADRO<br>DE HONOR FINAL</h2><div class="rule"></div></div>
-        <div class="step rv">Banda especial de honor</div>
-        ${fireCard(AWARD_FINAL.puta)}
-        <div class="step rv">Finalistas</div>
-        <div class="podium">${podCard(AWARD_FINAL.second,'p2')}${podCard(AWARD_FINAL.first,'p1')}</div>
-        <div class="step rv">La reina de la noche</div>
-        ${queenCard(AWARD_FINAL.queen)}
+    $('#banner').hidden = admin || hasVisibleAwards;
+    const html = AWARD_BLOCKS.map(block => {
+      const mentions = block.mentions.filter(([key]) => admin || awardVisible(key));
+      const sash = admin || awardVisible(block.sash[0]) ? block.sash : null;
+      if (!mentions.length && !sash) return '';
+      return `<section class="block">
+        <div class="block-head rv"><small>Bloque ${block.n}</small><h2 class="silver-text">${esc(block.title)}</h2><div class="rule"></div></div>
+        ${mentions.map(miniCard).join('')}
+        ${sash ? sashCard(sash) : ''}
       </section>`;
+    }).join('');
+    const special = admin || awardVisible(AWARD_FINAL.puta[0]);
+    const second = admin || awardVisible(AWARD_FINAL.second[0]);
+    const first = admin || awardVisible(AWARD_FINAL.first[0]);
+    const queen = admin || awardVisible(AWARD_FINAL.queen[0]);
+    const hasFinal = special || second || first || queen;
+    const finalHTML = hasFinal ? `<section class="climax">
+      <div class="climax-title rv"><h2 class="gold-text">EL GRAN CUADRO<br>DE HONOR FINAL</h2><div class="rule"></div></div>
+      ${special ? `<div class="step rv">Banda especial de honor</div>${fireCard(AWARD_FINAL.puta)}` : ''}
+      ${second || first ? `<div class="step rv">Finalistas</div><div class="podium">${second ? podCard(AWARD_FINAL.second,'p2') : ''}${first ? podCard(AWARD_FINAL.first,'p1') : ''}</div>` : ''}
+      ${queen ? `<div class="step rv">La reina de la noche</div>${queenCard(AWARD_FINAL.queen)}` : ''}
+    </section>` : '';
 
-    $('#premiosRoot').innerHTML = html;
+    $('#premiosRoot').innerHTML = html + finalHTML;
     observeAwards();
 
-    $$('#premiosRoot select[data-key]').forEach(s => s.addEventListener('change', async () => {
-      try{ await DB.set('/awards/' + s.dataset.key, s.value || null); await sync(true); toast('Premio actualizado'); }
-      catch(e){ toast('No se pudo guardar'); }
+    $$('#premiosRoot [data-visible-award]').forEach(button => button.addEventListener('click', async () => {
+      const key = button.dataset.visibleAward;
+      const next = !awardVisible(key);
+      button.disabled = true;
+      try{
+        await DB.set('/config/awardVisible/' + key, next);
+        await sync(true);
+        toast(next ? 'Premio visible para las candidatas' : 'Premio oculto para las candidatas');
+      }catch(error){
+        console.error('No se pudo cambiar la visibilidad del premio:', error);
+        toast('No se pudo cambiar la visibilidad del premio');
+        button.disabled = false;
+      }
+    }));
+    $$('#premiosRoot [data-publish-award]').forEach(button => button.addEventListener('click', async () => {
+      const key = button.dataset.publishAward;
+      const next = !awardPublished(key);
+      if (next && (!awardVisible(key) || !awardWinnerIds(key).length)) return;
+      button.disabled = true;
+      try{
+        await DB.set('/config/awardPublished/' + key, next);
+        await sync(true);
+        toast(next ? 'Ganadora publicada' : 'Ganadora oculta');
+      }catch(error){
+        console.error('No se pudo cambiar la publicación del premio:', error);
+        toast('No se pudo cambiar la publicación');
+        button.disabled = false;
+      }
     }));
   }, force);
 }
-
-async function togglePublish(){
-  try{ await DB.set('/config/published', !published()); await sync(true); toast(published() ? '¡Resultados publicados!' : 'Resultados ocultos (borrador)'); }
-  catch(e){ toast('No se pudo cambiar el estado'); }
-}
-$('#pubToggle').addEventListener('click', togglePublish);
-$('#pubToggle').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); togglePublish(); } });
-$('#clearAwardsBtn').addEventListener('click', async () => {
-  if (!confirm('Se quitarán todas las ganadoras asignadas. ¿Continuar?')) return;
-  try{ await DB.set('/awards', null); await sync(true); toast('Premios vaciados'); }catch(e){ toast('Error'); }
-});
 $('#demoBtn').addEventListener('click', async () => {
   const demo = [['Valentina Cruz','México'],['Camila Ríos','Argentina'],['Luna Ferrer','España'],['Sofía Blanco','Colombia'],['Aitana Vega','Chile'],['Nora Bellini','Italia'],['Ámbar Solís','Perú'],['Irene Duval','Francia']];
   try{
@@ -1448,9 +1673,9 @@ function renderAdmin(force){
   if (!ok) return;
   renderIf('adm-mode', DB.live ? 'live' : 'local', drawLiveMode, force);
   renderIf('adm-tabs', JSON.stringify(PUBLIC_TABS.map(({id}) => [id, isTabVisible(id)])), drawTabVisibility, force);
-  renderIf('adm-sw', vstate(), drawSwitch, force);
+  renderIf('adm-sw', JSON.stringify([vstate(), finalTieVoting(), finalTieRound(), finalistTieGroup().map(candidate => candidate.id), DATA.config && DATA.config.finalTieVotes]), drawSwitch, force);
   renderIf('adm-ph', cSig(), drawPhotocall, force);
-  renderIf('adm-rs', cands().map(c => c.id + c.name).join() + JSON.stringify(DATA.votes || {}), drawResults, force);
+  renderIf('adm-rs', cands().map(c => c.id + c.name).join() + JSON.stringify([DATA.votes || {}, DATA.config && DATA.config.finalTieVotes, finalTieVoting()]), drawResults, force);
 }
 
 function drawLiveMode(){
@@ -1496,10 +1721,43 @@ function drawTabVisibility(){
 
 function drawSwitch(){
   const v = vstate();
-  const btn = (k, label, cls='') => `<button class="${cls} ${v===k?'active':''}" data-v="${k}">${label}</button>`;
-  $('#adminSwitch').innerHTML = btn('closed','Cerrar Urnas','close') + btn('b1','Activar Votación Bloque 1') + btn('b2','Activar Votación Bloque 2') + btn('b3','Activar Votación Bloque 3') + btn('b4','Activar Votación Bloque 4');
+  const tieGroup = finalistTieGroup();
+  const exceptionalEnabled = finalTieVoting();
+  const canOpenExceptional = tieGroup.length > 1 && v === 'closed';
+  const btn = (k, label, cls='') => `<button class="${cls} ${v===k && !(k==='closed' && exceptionalEnabled)?'active':''}" data-v="${k}">${label}</button>`;
+  $('#adminSwitch').innerHTML = btn('closed','Cerrar Urnas','close') + btn('b1','Activar Votación Bloque 1') + btn('b2','Activar Votación Bloque 2') + btn('b3','Activar Votación Bloque 3') + btn('b4','Activar Votación Bloque 4') +
+    `<button class="${exceptionalEnabled?'active':''}" data-v="final" ${!exceptionalEnabled && !canOpenExceptional?'disabled':''}>Votación excepcional${tieGroup.length>1?` · ${tieGroup.length} empatadas`:''}</button>`;
   $$('#adminSwitch button').forEach(b => b.addEventListener('click', async () => {
-    try{ await DB.set('/config/voting', b.dataset.v); await sync(true); toast(b.textContent.trim()); }
+    if (b.dataset.v === 'final'){
+      if (finalTieVoting()) return;
+      if (finalistTieGroup().length < 2) return;
+      if (vstate() !== 'closed'){
+        toast('Cierra las urnas ordinarias antes del desempate');
+        return;
+      }
+      b.disabled = true;
+      try{
+        if (Object.keys((DATA.config && DATA.config.finalTieVotes) || {}).length){
+          await DB.set('/config/finalTieVotes', null);
+        }
+        await DB.set('/config/finalTieRound', finalTieRound() + 1);
+        await DB.set('/config/finalTieVoting', true);
+        await sync(true);
+        toast('Votación excepcional abierta');
+      }catch(error){
+        console.error('No se pudo cambiar la votación excepcional:', error);
+        toast('No se pudo cambiar la votación excepcional');
+        b.disabled = false;
+      }
+      return;
+    }
+    try{
+      await DB.set('/config/voting', b.dataset.v);
+      const closingUrns = b.dataset.v === 'closed';
+      if (closingUrns) await DB.set('/config/finalTieVoting', false);
+      await sync(true);
+      toast(closingUrns ? 'Urnas cerradas' : b.textContent.trim());
+    }
     catch(e){ toast('Error al cambiar el estado'); }
   }));
 }
@@ -1545,33 +1803,49 @@ async function uploadPhoto(id, input){
 
 function tally(){
   const cs = cands(), total = {}, cat = {};
-  const voters = Object.fromEntries(VOTE_BLOCK_KEYS.map(b => [b,0]));
-  cs.forEach(c => total[c.id] = {...Object.fromEntries(VOTE_BLOCK_KEYS.map(b => [b,0])),all:0});
+  const voters = Object.fromEntries([...VOTE_BLOCK_KEYS,'final'].map(b => [b,0]));
+  cs.forEach(c => total[c.id] = {...Object.fromEntries([...VOTE_BLOCK_KEYS,'final'].map(b => [b,0])),all:0});
   VOTE_BLOCK_KEYS.forEach(b => {
     Object.values((DATA.votes && DATA.votes[b]) || {}).forEach(v => {
       voters[b]++;
       Object.entries(v.a || {}).forEach(([k, cid]) => {
         if (!total[cid]) return;
-        total[cid][b]++; total[cid].all++;
+        total[cid][b]++;
+        if (b !== 'b4') total[cid].all++;
         const key = b + '_' + k.slice(1);
         cat[key] = cat[key] || {}; cat[key][cid] = (cat[key][cid] || 0) + 1;
       });
     });
+  });
+  const exceptionalVotes = Object.values((DATA.config && DATA.config.finalTieVotes) || {});
+  voters.final = exceptionalVotes.length;
+  exceptionalVotes.forEach(vote => {
+    const id = vote && vote.a && vote.a.c0;
+    if (!total[id]) return;
+    total[id].final++;
+    cat.final_0 = cat.final_0 || {};
+    cat.final_0[id] = (cat.final_0[id] || 0) + 1;
   });
   return {cs, total, cat, voters};
 }
 function drawResults(){
   const openKeys = $$('#adminResults details[open]').map(d => d.dataset.k);
   const {cs, total, cat, voters} = tally();
-  const rank = [...cs].sort((a,b) => total[b.id].all - total[a.id].all || (a.name||'').localeCompare(b.name||'','es'));
-  const top = rank.filter(c => total[c.id].all > 0).slice(0,3);
-  let h = `<p class="cat-t">Votantes: ${VOTE_BLOCK_KEYS.map(b => `${b.toUpperCase()} ${voters[b]}`).join(' · ')}</p>`;
-  h += top.length ? `<div class="podium-admin">` + top.map((c,i) => `<div class="pod-adm"><div class="m">${i+1}</div>
-      <div class="n"><b>${esc(c.name)}</b><small>${esc(c.country)}</small></div><div class="p">${total[c.id].all}</div></div>`).join('') + `</div>`
+  const groups = finalistGroups();
+  const rank = groups.flatMap(group => group.candidates);
+  const top = [];
+  let position = 0;
+  groups.forEach(group => {
+    if (position < 3 && group.candidates.some(candidate => total[candidate.id].all > 0)) top.push({group, rank:position + 1});
+    position += group.candidates.length;
+  });
+  let h = `<p class="cat-t">Votantes: ${VOTE_BLOCK_KEYS.map(b => `${b.toUpperCase()} ${voters[b]}`).join(' · ')} · EXCEPCIONAL ${voters.final}</p>`;
+  h += top.length ? `<div class="podium-admin">` + top.map(({group,rank:place}) => `<div class="pod-adm"><div class="m">${place}</div>
+      <div class="n"><b>${group.candidates.map(candidate => esc(candidate.name)).join(' · ')}</b><small>${group.candidates.map(candidate => esc(candidate.country)).join(' · ')}${group.candidates.length>1?' · Empate':''}</small></div><div class="p">${total[group.candidates[0].id].all + total[group.candidates[0].id].final}</div></div>`).join('') + `</div>`
     : `<p class="sec-sub">Aún no hay votos registrados.</p>`;
   if (cs.length){
-    h += `<table class="res"><tr><th>Candidata</th>${VOTE_BLOCK_KEYS.map(b => `<th>${b.toUpperCase()}</th>`).join('')}<th>Total</th></tr>` +
-      rank.map(c => `<tr><td>${esc(c.name)}</td>${VOTE_BLOCK_KEYS.map(b => `<td>${total[c.id][b]}</td>`).join('')}<td><b>${total[c.id].all}</b></td></tr>`).join('') + `</table>`;
+    h += `<table class="res"><tr><th>Candidata</th>${VOTE_BLOCK_KEYS.map(b => `<th>${b.toUpperCase()}</th>`).join('')}<th>EXC.</th><th>Total</th></tr>` +
+      rank.map(c => `<tr><td>${esc(c.name)}</td>${VOTE_BLOCK_KEYS.map(b => `<td>${total[c.id][b]}</td>`).join('')}<td>${total[c.id].final}</td><td><b>${total[c.id].all + total[c.id].final}</b></td></tr>`).join('') + `</table>`;
     h += `<p class="cat-t" style="margin-top:16px">Desglose por categoría</p>`;
     Object.keys(VOTE_BLOCKS).forEach(b => {
       h += `<details class="dr" data-k="${b}" ${openKeys.includes(b)?'open':''}><summary>${esc(VOTE_BLOCKS[b].title)}</summary>` +
@@ -1581,13 +1855,29 @@ function drawResults(){
           return `<div class="cat-t">${esc(c[0])}${c[2] ? ' ('+esc(c[2])+')' : ''}</div><div class="chips">${chips || '<span class="chip">Sin votos</span>'}</div>`;
         }).join('') + `</details>`;
     });
+    const exceptionalCounts = cat.final_0 || {};
+    const exceptionalChips = cs.filter(candidate => exceptionalCounts[candidate.id])
+      .sort((a,b) => exceptionalCounts[b.id] - exceptionalCounts[a.id])
+      .map(candidate => `<span class="chip">${esc(candidate.name)} · <b>${exceptionalCounts[candidate.id]}</b></span>`)
+      .join('');
+    h += `<details class="dr" data-k="final" ${openKeys.includes('final')?'open':''}><summary>${esc(FINAL_TIE_VOTE.title)}</summary>
+      <div class="cat-t">${esc(FINAL_TIE_VOTE.cats[0][0])}</div>
+      <div class="chips">${exceptionalChips || '<span class="chip">Sin votos</span>'}</div></details>`;
   }
   $('#adminResults').innerHTML = h;
 }
 $('#resetVotes').addEventListener('click', async () => {
   if (!confirm('Se borrarán TODOS los votos y todos podrán volver a votar. ¿Continuar?')) return;
   if (!confirm('Confirmación final: esta acción no se puede deshacer.')) return;
-  try{ await DB.set('/votes', null); await DB.set('/config/epoch', epoch() + 1); await sync(true); toast('Votos borrados'); }
+  try{
+    await DB.set('/votes', null);
+    await DB.set('/config/finalTieVotes', null);
+    await DB.set('/config/finalTieVoting', false);
+    await DB.set('/config/finalTieRound', finalTieRound() + 1);
+    await DB.set('/config/epoch', epoch() + 1);
+    await sync(true);
+    toast('Votos borrados');
+  }
   catch(e){ console.error('No se pudieron borrar los votos:', e); toast('No se pudieron borrar los votos: ' + e.message); }
 });
 
