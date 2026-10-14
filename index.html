@@ -545,9 +545,13 @@ const VOTE_BLOCKS = {
     ['PREMIO ESPECIAL','¿Quién ha demostrado ser la más descarada, la que se come la cámara y la auténtica dueña de la noche?']]}
 };
 const VOTE_BLOCK_KEYS = Object.keys(VOTE_BLOCKS);
+const FINAL_TIE_BLOCK = 'final';
 const FINAL_TIE_VOTE = { title:'Votación excepcional · Desempate final', cats:[
   ['Desempate final','¿Quién debe ganar entre las candidatas empatadas?']
 ]};
+const voteCategories = block => block === FINAL_TIE_BLOCK
+  ? FINAL_TIE_VOTE.cats
+  : VOTE_BLOCKS[block] && VOTE_BLOCKS[block].cats;
 
 function normalizeVoteBlocks(data){
   const votes = data.votes;
@@ -733,10 +737,17 @@ const DB = (() => {
       await expect(r, 'No se pudieron borrar los votos');
       return;
     }
+    if (parts.length === 2 && value === null){
+      const block = parts[1];
+      if (!voteCategories(block)) throw new Error('Bloque de votación no válido');
+      const r = await fetch(V + '?' + new URLSearchParams({bloque:'eq.' + block}), {method:'DELETE', headers:H});
+      await expect(r, 'No se pudieron borrar los votos del bloque');
+      return;
+    }
     if (parts.length !== 3) throw new Error('Ruta de voto no válida');
     const [, block, voterId] = parts;
     if (!allowLegacyVoter && !isUuid(voterId)) throw new Error('El votante debe ser el UUID de una candidata inscrita');
-    const categories = VOTE_BLOCKS[block] && VOTE_BLOCKS[block].cats;
+    const categories = voteCategories(block);
     if (!categories) throw new Error('Bloque de votación no válido');
     const filters = new URLSearchParams({bloque:'eq.' + block, usuario_id:'eq.' + voterId});
     if (value === null){
@@ -770,6 +781,25 @@ const DB = (() => {
       body:JSON.stringify(rows)
     });
     await expect(r, 'No se pudo guardar el voto');
+  }
+  async function migrateLegacyFinalVotes(tree, voteRows){
+    const legacyVotes = tree.config && tree.config.finalTieVotes;
+    if (!legacyVotes || typeof legacyVotes !== 'object') return;
+    const candidateIds = tree.migration && tree.migration.candidateIds || {};
+    const existingVoters = new Set(voteRows.filter(row => row.bloque === FINAL_TIE_BLOCK).map(row => row.usuario_id));
+    tree.votes[FINAL_TIE_BLOCK] = tree.votes[FINAL_TIE_BLOCK] || {};
+    for (const [legacyVoter, vote] of Object.entries(legacyVotes)){
+      const voterId = candidateIds[encodeURIComponent(legacyVoter)] || legacyVoter;
+      const answers = Object.fromEntries(Object.entries((vote && vote.a) || {}).map(([key, id]) =>
+        [key, candidateIds[encodeURIComponent(id)] || id]
+      ));
+      if (!existingVoters.has(voterId)){
+        await writeVote(`/votes/${FINAL_TIE_BLOCK}/${voterId}`, {...vote, a:answers}, true);
+        tree.votes[FINAL_TIE_BLOCK][voterId] = {...vote, a:answers};
+      }
+    }
+    await writeKv('/config/finalTieVotes', null);
+    delete tree.config.finalTieVotes;
   }
   async function migrateLegacyData(tree){
     tree = normalizeVoteBlocks(tree);
@@ -855,7 +885,7 @@ const DB = (() => {
     });
     voteRows.forEach(row => {
       const block = row.bloque;
-      const categories = VOTE_BLOCKS[block] && VOTE_BLOCKS[block].cats;
+      const categories = voteCategories(block);
       const categoryIndex = categories && categories.findIndex(category => category[0] === row.categoria);
       const key = categoryIndex >= 0 ? 'c' + categoryIndex : row.categoria;
       const voterId = legacyVoter && row.usuario_id === legacyVoter.legacyVoterId
@@ -873,7 +903,16 @@ const DB = (() => {
     async read(){
       if (CONFIG.BACKEND === 'supabase'){
         await refreshMode();
-        if (!activeLive) return normalizeVoteBlocks(lsRead());
+        if (!activeLive){
+          const local = normalizeVoteBlocks(lsRead());
+          if (local.config && local.config.finalTieVotes){
+            local.votes = local.votes || {};
+            local.votes[FINAL_TIE_BLOCK] = {...local.config.finalTieVotes, ...(local.votes[FINAL_TIE_BLOCK] || {})};
+            delete local.config.finalTieVotes;
+            localStorage.setItem(LS, JSON.stringify(local));
+          }
+          return local;
+        }
         const legacyRows = await readKvRows();
         const legacyTree = treeFromKv(legacyRows);
         if (!migrationPromise && !(legacyTree.migration && legacyTree.migration.relationalV1 === true)){
@@ -892,12 +931,20 @@ const DB = (() => {
         const relational = relationalTree(candidateRows, voteRows, legacyVoter);
         tree.candidates = relational.candidates;
         tree.votes = relational.votes;
+        await migrateLegacyFinalVotes(tree, voteRows);
         const mappings = tree.migration && tree.migration.candidateIds || {};
         const localId = localStorage.getItem('mg_me');
         if (localId && mappings[encodeURIComponent(localId)]) localStorage.setItem('mg_me', mappings[encodeURIComponent(localId)]);
         return normalizeVoteBlocks(tree);
       }
-      return normalizeVoteBlocks(lsRead());
+      const local = normalizeVoteBlocks(lsRead());
+      if (local.config && local.config.finalTieVotes){
+        local.votes = local.votes || {};
+        local.votes[FINAL_TIE_BLOCK] = {...local.config.finalTieVotes, ...(local.votes[FINAL_TIE_BLOCK] || {})};
+        delete local.config.finalTieVotes;
+        localStorage.setItem(LS, JSON.stringify(local));
+      }
+      return local;
     },
     async set(path, val){
       if (CONFIG.BACKEND === 'supabase' && (path === modePath || activeLive)){
@@ -1092,7 +1139,7 @@ const hasVoted = (b, candidateId = registeredCandidateId()) => {
    ? `mg_voted_final_${finalTieRound()}_${candidateId}`
    : `mg_voted_${b}_${candidateId}`);
  const remoteVote = b === 'final'
-   ? DATA.config && DATA.config.finalTieVotes && DATA.config.finalTieVotes[candidateId]
+   ? DATA.votes && DATA.votes[FINAL_TIE_BLOCK] && DATA.votes[FINAL_TIE_BLOCK][candidateId]
    : DATA.votes && DATA.votes[b] && DATA.votes[b][candidateId];
  return localMark === String(epoch()) || !!remoteVote;
 };
@@ -1133,7 +1180,6 @@ async function reclaimCandidate(candidateId, select){
   select.disabled = true;
   let originalCandidate;
   let newId;
-  let finalTieVote;
   let awardChanges = [];
   let voteChanges = [];
   try{
@@ -1162,18 +1208,12 @@ async function reclaimCandidate(candidateId, select){
         }
       });
     });
-    finalTieVote = currentData.config && currentData.config.finalTieVotes && currentData.config.finalTieVotes[candidateId];
-
     await DB.set('/candidates/' + newId, updatedCandidate);
     for (const {key} of awardChanges) await DB.set('/awards/' + key, newId);
     for (const {block, voter, newVoter, vote} of voteChanges){
       const answers = Object.fromEntries(Object.entries(vote.a).map(([key, id]) => [key, id === candidateId ? newId : id]));
       await DB.set(`/votes/${block}/${newVoter}`, {...vote, a:answers});
       if (newVoter !== voter) await DB.set(`/votes/${block}/${voter}`, null);
-    }
-    if (finalTieVote){
-      await DB.set('/config/finalTieVotes/' + newId, finalTieVote);
-      await DB.set('/config/finalTieVotes/' + candidateId, null);
     }
     await DB.set('/candidates/' + candidateId, null);
 
@@ -1186,11 +1226,6 @@ async function reclaimCandidate(candidateId, select){
       if (newVoter !== voter) delete currentData.votes[block][voter];
       currentData.votes[block][newVoter] = {...vote, a:answers};
     });
-    if (finalTieVote){
-      currentData.config.finalTieVotes[newId] = finalTieVote;
-      delete currentData.config.finalTieVotes[candidateId];
-    }
-
     if (!await sync(true)){
       DATA = currentData;
       renderAll();
@@ -1207,12 +1242,6 @@ async function reclaimCandidate(candidateId, select){
         try{
           await DB.set(`/votes/${block}/${voter}`, vote);
           if (newVoter !== voter) await DB.set(`/votes/${block}/${newVoter}`, null);
-        }catch(error){ rollbackFailed = true; }
-      }
-      if (finalTieVote){
-        try{
-          await DB.set('/config/finalTieVotes/' + candidateId, finalTieVote);
-          await DB.set('/config/finalTieVotes/' + newId, null);
         }catch(error){ rollbackFailed = true; }
       }
       try{ await DB.set('/candidates/' + newId, null); }catch(error){ rollbackFailed = true; }
@@ -1336,7 +1365,7 @@ async function sendVote(){
       toast(vs === 'final' ? 'La lista de candidatas empatadas ha cambiado; revisa tu voto' : 'La lista de candidatas ha cambiado; revisa tu voto');
       return;
     }
-    const votePath = vs === 'final' ? `/config/finalTieVotes/${currentCandidateId}` : `/votes/${vs}/${currentCandidateId}`;
+    const votePath = `/votes/${vs}/${currentCandidateId}`;
     await DB.set(votePath, {a: answers, t: Date.now()});
     const localMarkKey = vs === 'final'
       ? `mg_voted_final_${finalTieRound()}_${currentCandidateId}`
@@ -1409,7 +1438,7 @@ function finalistGroups(){
   if (!tieGroup.length || finalTieVoting()) return groups;
   const tieIds = new Set(tieGroup.map(candidate => candidate.id));
   const tieVotes = {};
-  Object.values((DATA.config && DATA.config.finalTieVotes) || {}).forEach(vote => {
+  Object.values((DATA.votes && DATA.votes[FINAL_TIE_BLOCK]) || {}).forEach(vote => {
     const id = vote && vote.a && vote.a.c0;
     if (tieIds.has(id)) tieVotes[id] = (tieVotes[id] || 0) + 1;
   });
@@ -1673,9 +1702,9 @@ function renderAdmin(force){
   if (!ok) return;
   renderIf('adm-mode', DB.live ? 'live' : 'local', drawLiveMode, force);
   renderIf('adm-tabs', JSON.stringify(PUBLIC_TABS.map(({id}) => [id, isTabVisible(id)])), drawTabVisibility, force);
-  renderIf('adm-sw', JSON.stringify([vstate(), finalTieVoting(), finalTieRound(), finalistTieGroup().map(candidate => candidate.id), DATA.config && DATA.config.finalTieVotes]), drawSwitch, force);
+  renderIf('adm-sw', JSON.stringify([vstate(), finalTieVoting(), finalTieRound(), finalistTieGroup().map(candidate => candidate.id), DATA.votes && DATA.votes[FINAL_TIE_BLOCK]]), drawSwitch, force);
   renderIf('adm-ph', cSig(), drawPhotocall, force);
-  renderIf('adm-rs', cands().map(c => c.id + c.name).join() + JSON.stringify([DATA.votes || {}, DATA.config && DATA.config.finalTieVotes, finalTieVoting()]), drawResults, force);
+  renderIf('adm-rs', cands().map(c => c.id + c.name).join() + JSON.stringify([DATA.votes || {}, finalTieVoting()]), drawResults, force);
 }
 
 function drawLiveMode(){
@@ -1737,9 +1766,7 @@ function drawSwitch(){
       }
       b.disabled = true;
       try{
-        if (Object.keys((DATA.config && DATA.config.finalTieVotes) || {}).length){
-          await DB.set('/config/finalTieVotes', null);
-        }
+        await DB.set('/votes/final', null);
         await DB.set('/config/finalTieRound', finalTieRound() + 1);
         await DB.set('/config/finalTieVoting', true);
         await sync(true);
@@ -1817,7 +1844,7 @@ function tally(){
       });
     });
   });
-  const exceptionalVotes = Object.values((DATA.config && DATA.config.finalTieVotes) || {});
+  const exceptionalVotes = Object.values((DATA.votes && DATA.votes[FINAL_TIE_BLOCK]) || {});
   voters.final = exceptionalVotes.length;
   exceptionalVotes.forEach(vote => {
     const id = vote && vote.a && vote.a.c0;
@@ -1871,7 +1898,6 @@ $('#resetVotes').addEventListener('click', async () => {
   if (!confirm('Confirmación final: esta acción no se puede deshacer.')) return;
   try{
     await DB.set('/votes', null);
-    await DB.set('/config/finalTieVotes', null);
     await DB.set('/config/finalTieVoting', false);
     await DB.set('/config/finalTieRound', finalTieRound() + 1);
     await DB.set('/config/epoch', epoch() + 1);
