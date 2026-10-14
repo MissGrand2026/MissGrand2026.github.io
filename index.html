@@ -363,7 +363,7 @@ footer{text-align:center;margin-top:34px}
       <article class="tl-item"><span class="node">3</span>
         <div class="glass"><small>BLOQUE 3</small><h3>Concurso de Talentos</h3>
           <p>Expresión libre: comedia, playback o actuación. Máximo 2 minutos.</p>
-          <div class="more">Al terminar el bloque se abre la votación del Bloque 3 y el Premio Especial.</div></div></article>
+          <div class="more">Al terminar el bloque se abre la votación del Bloque 3.</div></div></article>
     </div>
   </section>
 
@@ -530,9 +530,39 @@ const VOTE_BLOCKS = {
     ['El Talento Real','¿Quién demostró un talento de verdad?'],
     ['La Comedia','¿Quién dio el show más absurdo o gracioso?'],
     ['El Descaro','¿Quién le echó más morro e improvisación?'],
-    ['El Momento Ícono','¿Qué actuación recordaremos durante años?'],
+    ['El Momento Ícono','¿Qué actuación recordaremos durante años?']]},
+  b4:{ title:'Bloque 4: Premios especiales', cats:[
     ['PREMIO ESPECIAL','¿Quién ha demostrado ser la más descarada, la que se come la cámara y la auténtica dueña de la noche?']]}
 };
+const VOTE_BLOCK_KEYS = Object.keys(VOTE_BLOCKS);
+
+function normalizeVoteBlocks(data){
+  const votes = data.votes;
+  if (!votes || !votes.b3) return data;
+  let normalized;
+  for (const [voterId, vote] of Object.entries(votes.b3)){
+    const answers = vote && vote.a;
+    if (!answers) continue;
+    const specialKey = Object.keys(answers).find(key =>
+      key === 'c4' || key === 'PREMIO ESPECIAL'
+    );
+    if (!specialKey) continue;
+    normalized = normalized || {...data, votes:{...votes, b3:{...votes.b3}, b4:{...(votes.b4 || {})}}};
+    const b3Vote = normalized.votes.b3[voterId];
+    const b3Answers = {...b3Vote.a};
+    const specialAnswer = b3Answers[specialKey];
+    delete b3Answers[specialKey];
+    normalized.votes.b3[voterId] = {...b3Vote, a:b3Answers};
+    const b4Vote = normalized.votes.b4[voterId] || {a:{}, t:b3Vote.t};
+    const b4Answers = {...(b4Vote.a || {})};
+    if (!Object.prototype.hasOwnProperty.call(b4Answers, 'c0')) b4Answers.c0 = specialAnswer;
+    normalized.votes.b4[voterId] = {
+      ...b4Vote,
+      a:b4Answers
+    };
+  }
+  return normalized || data;
+}
 
 /* ---------- Premios & Cuadro de Honor ---------- */
 const AWARD_BLOCKS = [
@@ -723,6 +753,7 @@ const DB = (() => {
     await expect(r, 'No se pudo guardar el voto');
   }
   async function migrateLegacyData(tree){
+    tree = normalizeVoteBlocks(tree);
     if (tree.migration && tree.migration.relationalV1 === true) return;
     const ids = tree.migration && tree.migration.candidateIds || {};
     const candidates = tree.candidates || {};
@@ -822,7 +853,7 @@ const DB = (() => {
     async read(){
       if (CONFIG.BACKEND === 'supabase'){
         await refreshMode();
-        if (!activeLive) return lsRead();
+        if (!activeLive) return normalizeVoteBlocks(lsRead());
         const legacyRows = await readKvRows();
         const legacyTree = treeFromKv(legacyRows);
         if (!migrationPromise && !(legacyTree.migration && legacyTree.migration.relationalV1 === true)){
@@ -844,9 +875,9 @@ const DB = (() => {
         const mappings = tree.migration && tree.migration.candidateIds || {};
         const localId = localStorage.getItem('mg_me');
         if (localId && mappings[encodeURIComponent(localId)]) localStorage.setItem('mg_me', mappings[encodeURIComponent(localId)]);
-        return tree;
+        return normalizeVoteBlocks(tree);
       }
-      return lsRead();
+      return normalizeVoteBlocks(lsRead());
     },
     async set(path, val){
       if (CONFIG.BACKEND === 'supabase' && (path === modePath || activeLive)){
@@ -1467,7 +1498,7 @@ function drawTabVisibility(){
 function drawSwitch(){
   const v = vstate();
   const btn = (k, label, cls='') => `<button class="${cls} ${v===k?'active':''}" data-v="${k}">${label}</button>`;
-  $('#adminSwitch').innerHTML = btn('closed','Cerrar Urnas','close') + btn('b1','Activar Votación Bloque 1') + btn('b2','Activar Votación Bloque 2') + btn('b3','Activar Votación Bloque 3');
+  $('#adminSwitch').innerHTML = btn('closed','Cerrar Urnas','close') + btn('b1','Activar Votación Bloque 1') + btn('b2','Activar Votación Bloque 2') + btn('b3','Activar Votación Bloque 3') + btn('b4','Activar Votación Bloque 4');
   $$('#adminSwitch button').forEach(b => b.addEventListener('click', async () => {
     try{ await DB.set('/config/voting', b.dataset.v); await sync(true); toast(b.textContent.trim()); }
     catch(e){ toast('Error al cambiar el estado'); }
@@ -1514,9 +1545,10 @@ async function uploadPhoto(id, input){
 }
 
 function tally(){
-  const cs = cands(), total = {}, cat = {}, voters = {b1:0,b2:0,b3:0};
-  cs.forEach(c => total[c.id] = {b1:0,b2:0,b3:0,all:0});
-  ['b1','b2','b3'].forEach(b => {
+  const cs = cands(), total = {}, cat = {};
+  const voters = Object.fromEntries(VOTE_BLOCK_KEYS.map(b => [b,0]));
+  cs.forEach(c => total[c.id] = {...Object.fromEntries(VOTE_BLOCK_KEYS.map(b => [b,0])),all:0});
+  VOTE_BLOCK_KEYS.forEach(b => {
     Object.values((DATA.votes && DATA.votes[b]) || {}).forEach(v => {
       voters[b]++;
       Object.entries(v.a || {}).forEach(([k, cid]) => {
@@ -1534,13 +1566,13 @@ function drawResults(){
   const {cs, total, cat, voters} = tally();
   const rank = [...cs].sort((a,b) => total[b.id].all - total[a.id].all || (a.name||'').localeCompare(b.name||'','es'));
   const top = rank.filter(c => total[c.id].all > 0).slice(0,3);
-  let h = `<p class="cat-t">Votantes: B1 ${voters.b1} · B2 ${voters.b2} · B3 ${voters.b3}</p>`;
+  let h = `<p class="cat-t">Votantes: ${VOTE_BLOCK_KEYS.map(b => `${b.toUpperCase()} ${voters[b]}`).join(' · ')}</p>`;
   h += top.length ? `<div class="podium-admin">` + top.map((c,i) => `<div class="pod-adm"><div class="m">${i+1}</div>
       <div class="n"><b>${esc(c.name)}</b><small>${esc(c.country)}</small></div><div class="p">${total[c.id].all}</div></div>`).join('') + `</div>`
     : `<p class="sec-sub">Aún no hay votos registrados.</p>`;
   if (cs.length){
-    h += `<table class="res"><tr><th>Candidata</th><th>B1</th><th>B2</th><th>B3</th><th>Total</th></tr>` +
-      rank.map(c => `<tr><td>${esc(c.name)}</td><td>${total[c.id].b1}</td><td>${total[c.id].b2}</td><td>${total[c.id].b3}</td><td><b>${total[c.id].all}</b></td></tr>`).join('') + `</table>`;
+    h += `<table class="res"><tr><th>Candidata</th>${VOTE_BLOCK_KEYS.map(b => `<th>${b.toUpperCase()}</th>`).join('')}<th>Total</th></tr>` +
+      rank.map(c => `<tr><td>${esc(c.name)}</td>${VOTE_BLOCK_KEYS.map(b => `<td>${total[c.id][b]}</td>`).join('')}<td><b>${total[c.id].all}</b></td></tr>`).join('') + `</table>`;
     h += `<p class="cat-t" style="margin-top:16px">Desglose por categoría</p>`;
     Object.keys(VOTE_BLOCKS).forEach(b => {
       h += `<details class="dr" data-k="${b}" ${openKeys.includes(b)?'open':''}><summary>${esc(VOTE_BLOCKS[b].title)}</summary>` +
