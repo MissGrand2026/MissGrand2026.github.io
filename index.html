@@ -573,6 +573,7 @@ function uuid(){
   const hex = [...bytes].map(b => b.toString(16).padStart(2,'0')).join('');
   return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
 }
+const isUuid = value => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value || '');
 
 const crown = (s=64) => `<svg class="crown" width="${s}" height="${s}" viewBox="0 0 64 64" fill="none">
   <path d="M8 46 L4 18 L20 30 L32 8 L44 30 L60 18 L56 46 Z" fill="url(#sg)" opacity=".92"/>
@@ -611,7 +612,7 @@ const DB = (() => {
     const hex = [...digest.slice(0,16)].map(b => b.toString(16).padStart(2,'0')).join('');
     return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
   }
-  const isUuid = value => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value || '');
+  let legacyVoterMigrationAttempted = false;
   async function refreshMode(){
     if (CONFIG.BACKEND !== 'supabase'){ activeLive = false; return; }
     if (!CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_KEY) throw new Error('Supabase no configurado');
@@ -676,18 +677,19 @@ const DB = (() => {
     });
     await expect(r, 'No se pudo guardar la candidata');
   }
-  async function writeVote(path, value){
+  async function writeVote(path, value, allowLegacyVoter = false){
     const parts = path.split('/').filter(Boolean);
     if (parts.length === 1){
-      const r = await fetch(V, {method:'DELETE', headers:H});
+      const r = await fetch(V + '?' + new URLSearchParams({id:'not.is.null'}), {method:'DELETE', headers:H});
       await expect(r, 'No se pudieron borrar los votos');
       return;
     }
     if (parts.length !== 3) throw new Error('Ruta de voto no válida');
-    const [, block, voter] = parts;
+    const [, block, voterId] = parts;
+    if (!allowLegacyVoter && !isUuid(voterId)) throw new Error('El votante debe ser el UUID de una candidata inscrita');
     const categories = VOTE_BLOCKS[block] && VOTE_BLOCKS[block].cats;
     if (!categories) throw new Error('Bloque de votación no válido');
-    const filters = new URLSearchParams({bloque:'eq.' + block, usuario_id:'eq.' + voter});
+    const filters = new URLSearchParams({bloque:'eq.' + block, usuario_id:'eq.' + voterId});
     if (value === null){
       const r = await fetch(V + '?' + filters, {method:'DELETE', headers:H});
       await expect(r, 'No se pudo eliminar el voto');
@@ -707,11 +709,11 @@ const DB = (() => {
         bloque:block,
         categoria:category,
         candidata_id:candidateId,
-        usuario_id:voter,
+        usuario_id:voterId,
         created_at:createdAt
       };
     });
-    for (const row of rows) row.id = await uuidV5(`vote:${block}:${voter}:${row.categoria}`);
+    for (const row of rows) row.id = await uuidV5(`vote:${block}:${voterId}:${row.categoria}`);
     if (!rows.length) throw new Error('No hay respuestas para guardar');
     const r = await fetch(V + '?on_conflict=id', {
       method:'POST',
@@ -738,6 +740,9 @@ const DB = (() => {
       const id = idMap.get(oldId);
       if (id && id !== oldId) await writeKv('/awards/' + key, id);
     }
+    const localId = localStorage.getItem('mg_me');
+    const localCandidateId = localId && (idMap.get(localId) || localId);
+    const legacyVoterId = localStorage.getItem('mg_voter');
     for (const [block, voters] of Object.entries(tree.votes || {})){
       for (const [voter, vote] of Object.entries(voters || {})){
         const answers = {};
@@ -746,17 +751,47 @@ const DB = (() => {
           if (!id) throw new Error(`No se pudo migrar el voto ${block}: falta la candidata ${oldId}`);
           answers[key] = id;
         }
-        if (Object.keys(answers).length) await writeVote(`/votes/${block}/${voter}`, {a:answers, t:vote.t});
+        const voterId = voter === legacyVoterId && isUuid(localCandidateId) ? localCandidateId : voter;
+        if (Object.keys(answers).length) await writeVote(`/votes/${block}/${voterId}`, {a:answers, t:vote.t}, voterId === voter);
       }
     }
     const legacy = await fetch(T + '?' + new URLSearchParams({or:'(path.like./candidates/*,path.like./votes/*)'}), {method:'DELETE', headers:H});
     await expect(legacy, 'No se pudieron retirar los datos antiguos de kv');
     await writeKv('/migration/relationalV1', true);
-    const localId = localStorage.getItem('mg_me');
     const mappedLocalId = localId && idMap.get(localId);
-    if (mappedLocalId) localStorage.setItem('mg_me', mappedLocalId);
+    if (mappedLocalId){
+      localStorage.setItem('mg_me', mappedLocalId);
+      localStorage.removeItem('mg_voter');
+    }
   }
-  function relationalTree(candidateRows, voteRows){
+  async function migrateLegacyVoter(candidateRows){
+    const candidateId = localStorage.getItem('mg_me');
+    const legacyVoterId = localStorage.getItem('mg_voter');
+    if (!candidateId || !legacyVoterId || candidateId === legacyVoterId || !isUuid(candidateId) ||
+        !candidateRows.some(candidate => candidate.id === candidateId)) return null;
+
+    for (const block of Object.keys(VOTE_BLOCKS)){
+      const legacyMark = localStorage.getItem('mg_voted_' + block);
+      if (legacyMark !== null) localStorage.setItem(`mg_voted_${block}_${candidateId}`, legacyMark);
+    }
+    if (legacyVoterMigrationAttempted) return {legacyVoterId, candidateId};
+    legacyVoterMigrationAttempted = true;
+
+    try{
+      const r = await fetch(V + '?' + new URLSearchParams({usuario_id:'eq.' + legacyVoterId}), {
+        method:'PATCH',
+        headers:H,
+        body:JSON.stringify({usuario_id:candidateId})
+      });
+      await expect(r, 'No se pudieron asociar los votos antiguos a la candidata');
+      localStorage.removeItem('mg_voter');
+    }catch(error){
+      console.error('No se pudo actualizar usuario_id de votos anteriores:', error);
+      toast('No se pudieron actualizar los IDs de votos anteriores. Los nuevos votos sí usarán el UUID de la candidata.');
+    }
+    return {legacyVoterId, candidateId};
+  }
+  function relationalTree(candidateRows, voteRows, legacyVoter){
     const tree = {candidates:{}, votes:{}};
     candidateRows.forEach(row => {
       tree.candidates[row.id] = {
@@ -772,10 +807,13 @@ const DB = (() => {
       const block = row.bloque;
       const categoryIndex = VOTE_BLOCKS[block] && VOTE_BLOCKS[block].cats.findIndex(category => category[0] === row.categoria);
       const key = categoryIndex >= 0 ? 'c' + categoryIndex : row.categoria;
+      const voterId = legacyVoter && row.usuario_id === legacyVoter.legacyVoterId
+        ? legacyVoter.candidateId
+        : row.usuario_id;
       tree.votes[block] = tree.votes[block] || {};
-      const vote = tree.votes[block][row.usuario_id] || {a:{}, t:row.created_at ? Date.parse(row.created_at) : 0};
+      const vote = tree.votes[block][voterId] || {a:{}, t:row.created_at ? Date.parse(row.created_at) : 0};
       if (row.candidata_id) vote.a[key] = row.candidata_id;
-      tree.votes[block][row.usuario_id] = vote;
+      tree.votes[block][voterId] = vote;
     });
     return tree;
   }
@@ -791,17 +829,16 @@ const DB = (() => {
           migrationPromise = migrateLegacyData(legacyTree).finally(() => { migrationPromise = null; });
         }
         if (migrationPromise) await migrationPromise;
-        const [kvRows, candidateResponse, voteResponse] = await Promise.all([
+        const [kvRows, candidateResponse] = await Promise.all([
           readKvRows(),
-          fetch(C + '?select=id,nombre_real,nombre_miss,delegacion,foto_url,created_at', {headers:H, cache:'no-store'}),
-          fetch(V + '?select=bloque,categoria,candidata_id,usuario_id,created_at', {headers:H, cache:'no-store'})
+          fetch(C + '?select=id,nombre_real,nombre_miss,delegacion,foto_url,created_at', {headers:H, cache:'no-store'})
         ]);
-        const [candidateRows, voteRows] = await Promise.all([
-          expect(candidateResponse, 'No se pudieron leer las candidatas').then(r => r.json()),
-          expect(voteResponse, 'No se pudieron leer los votos').then(r => r.json())
-        ]);
+        const candidateRows = await expect(candidateResponse, 'No se pudieron leer las candidatas').then(r => r.json());
+        const legacyVoter = await migrateLegacyVoter(candidateRows);
+        const voteResponse = await fetch(V + '?select=bloque,categoria,candidata_id,usuario_id,created_at', {headers:H, cache:'no-store'});
+        const voteRows = await expect(voteResponse, 'No se pudieron leer los votos').then(r => r.json());
         const tree = treeFromKv(kvRows);
-        const relational = relationalTree(candidateRows, voteRows);
+        const relational = relationalTree(candidateRows, voteRows, legacyVoter);
         tree.candidates = relational.candidates;
         tree.votes = relational.votes;
         const mappings = tree.migration && tree.migration.candidateIds || {};
@@ -948,7 +985,7 @@ function showRegDone(c){
 function checkMyReg(){
   const me = localStorage.getItem('mg_me');
   const c = me && DATA.candidates && DATA.candidates[me];
-  if (c) showRegDone(c);
+  if (isUuid(me) && c && c.id === me) showRegDone(c);
   else{
     if (me){
       localStorage.removeItem('mg_me');
@@ -989,14 +1026,21 @@ function revealTimeline(){
 /* =========================================================
    TAB 4 · URNA
    ========================================================= */
-let VOTER = localStorage.getItem('mg_voter');
-if (!VOTER){ VOTER = rid('v'); localStorage.setItem('mg_voter', VOTER); }
 let draft = {};
-const registeredCandidateId = () => {
-  const id = localStorage.getItem('mg_me');
-  return id && DATA.candidates && DATA.candidates[id] ? id : null;
+const registeredCandidate = () => {
+ const id = localStorage.getItem('mg_me');
+ const candidate = id && DATA.candidates && DATA.candidates[id];
+ return isUuid(id) && candidate && candidate.id === id ? candidate : null;
 };
-const hasVoted = b => localStorage.getItem('mg_voted_' + b) === String(epoch()) || !!(DATA.votes && DATA.votes[b] && DATA.votes[b][VOTER]);
+const registeredCandidateId = () => {
+ const candidate = registeredCandidate();
+ return candidate ? candidate.id : null;
+};
+const hasVoted = (b, candidateId = registeredCandidateId()) => {
+ if (!candidateId) return false;
+ const localMark = localStorage.getItem(`mg_voted_${b}_${candidateId}`);
+ return localMark === String(epoch()) || !!(DATA.votes && DATA.votes[b] && DATA.votes[b][candidateId]);
+};
 
 let reclaimingCandidate = false;
 let candidateReclaimConfirmation;
@@ -1036,7 +1080,12 @@ async function reclaimCandidate(candidateId, select){
   let voteChanges = [];
   try{
     const currentData = await DB.read();
-    originalCandidate = currentData.candidates && currentData.candidates[candidateId];
+    const selectedCandidate = currentData.candidates && currentData.candidates[candidateId];
+    if (!isUuid(candidateId) || !selectedCandidate || selectedCandidate.id !== candidateId){
+      toast('La candidatura seleccionada no tiene un UUID válido. Actualiza la página e inténtalo de nuevo.');
+      return;
+    }
+    originalCandidate = selectedCandidate;
     if (!originalCandidate || originalCandidate.id !== candidateId){
       toast('La candidata ya no está disponible. Actualiza la página e inténtalo de nuevo.');
       return;
@@ -1050,17 +1099,18 @@ async function reclaimCandidate(candidateId, select){
     voteChanges = [];
     Object.entries(currentData.votes || {}).forEach(([block, voters]) => {
       Object.entries(voters || {}).forEach(([voter, vote]) => {
-        if (Object.values((vote && vote.a) || {}).includes(candidateId)){
-          voteChanges.push({block, voter, vote});
+        if (voter === candidateId || Object.values((vote && vote.a) || {}).includes(candidateId)){
+          voteChanges.push({block, voter, newVoter:voter === candidateId ? newId : voter, vote});
         }
       });
     });
 
     await DB.set('/candidates/' + newId, updatedCandidate);
     for (const {key} of awardChanges) await DB.set('/awards/' + key, newId);
-    for (const {block, voter, vote} of voteChanges){
+    for (const {block, voter, newVoter, vote} of voteChanges){
       const answers = Object.fromEntries(Object.entries(vote.a).map(([key, id]) => [key, id === candidateId ? newId : id]));
-      await DB.set(`/votes/${block}/${voter}`, {...vote, a:answers});
+      await DB.set(`/votes/${block}/${newVoter}`, {...vote, a:answers});
+      if (newVoter !== voter) await DB.set(`/votes/${block}/${voter}`, null);
     }
     await DB.set('/candidates/' + candidateId, null);
 
@@ -1068,9 +1118,10 @@ async function reclaimCandidate(candidateId, select){
     currentData.candidates[newId] = updatedCandidate;
     delete currentData.candidates[candidateId];
     awardChanges.forEach(({key}) => { currentData.awards[key] = newId; });
-    voteChanges.forEach(({block, voter, vote}) => {
+    voteChanges.forEach(({block, voter, newVoter, vote}) => {
       const answers = Object.fromEntries(Object.entries(vote.a).map(([key, id]) => [key, id === candidateId ? newId : id]));
-      currentData.votes[block][voter] = {...vote, a:answers};
+      if (newVoter !== voter) delete currentData.votes[block][voter];
+      currentData.votes[block][newVoter] = {...vote, a:answers};
     });
 
     if (!await sync(true)){
@@ -1085,8 +1136,11 @@ async function reclaimCandidate(candidateId, select){
       for (const {key, id} of awardChanges){
         try{ await DB.set('/awards/' + key, id); }catch(error){ rollbackFailed = true; }
       }
-      for (const {block, voter, vote} of voteChanges){
-        try{ await DB.set(`/votes/${block}/${voter}`, vote); }catch(error){ rollbackFailed = true; }
+      for (const {block, voter, newVoter, vote} of voteChanges){
+        try{
+          await DB.set(`/votes/${block}/${voter}`, vote);
+          if (newVoter !== voter) await DB.set(`/votes/${block}/${newVoter}`, null);
+        }catch(error){ rollbackFailed = true; }
       }
       try{ await DB.set('/candidates/' + newId, null); }catch(error){ rollbackFailed = true; }
     }
@@ -1193,6 +1247,11 @@ async function sendVote(){
       toast('Solo pueden votar los dispositivos inscritos como candidatas');
       return;
     }
+    if (currentCandidateId !== myCandidateId){
+      renderUrna(true);
+      toast('La identidad de la candidatura cambió. Revisa tu ficha e inténtalo de nuevo.');
+      return;
+    }
     if (hasVoted(vs)){ renderUrna(true); return; }
     const currentEligibleIds = new Set(cands().filter(c => c.id !== currentCandidateId).map(c => c.id));
     if (Object.values(answers).some(id => !currentEligibleIds.has(id))){
@@ -1200,8 +1259,8 @@ async function sendVote(){
       toast('La lista de candidatas ha cambiado; revisa tu voto');
       return;
     }
-    await DB.set(`/votes/${vs}/${VOTER}`, {a: answers, t: Date.now()});
-    localStorage.setItem('mg_voted_' + vs, String(epoch()));
+    await DB.set(`/votes/${vs}/${currentCandidateId}`, {a: answers, t: Date.now()});
+    localStorage.setItem(`mg_voted_${vs}_${currentCandidateId}`, String(epoch()));
     draft = {};
     await sync(true); renderUrna(true);
     toast('¡Voto registrado!');
@@ -1499,7 +1558,7 @@ $('#resetVotes').addEventListener('click', async () => {
   if (!confirm('Se borrarán TODOS los votos y todos podrán volver a votar. ¿Continuar?')) return;
   if (!confirm('Confirmación final: esta acción no se puede deshacer.')) return;
   try{ await DB.set('/votes', null); await DB.set('/config/epoch', epoch() + 1); await sync(true); toast('Votos borrados'); }
-  catch(e){ toast('No se pudo borrar'); }
+  catch(e){ console.error('No se pudieron borrar los votos:', e); toast('No se pudieron borrar los votos: ' + e.message); }
 });
 
 /* =========================================================
