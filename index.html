@@ -212,6 +212,26 @@ details.dr ol{margin:0 0 12px;padding-left:20px;font-size:.8rem;line-height:1.55
 
 .award{position:relative;border-radius:20px;border:1px solid var(--line);background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 8px 28px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.08);transition:transform .3s,box-shadow .3s,border-color .3s}
 .award:hover,.award:active{transform:translateY(-4px);border-color:rgba(255,255,255,.55);box-shadow:0 14px 36px rgba(0,0,0,.55),0 0 28px rgba(224,230,237,.25)}
+.award-revealing::after{content:"";position:absolute;z-index:5;inset:0;border-radius:inherit;pointer-events:none;opacity:0;
+  background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.9) 49%,rgba(255,226,160,.8) 51%,transparent 66%);
+  background-size:220% 100%;background-position:120% 0;background-repeat:no-repeat;
+  animation:award-sparkle-sweep 2.9s ease-in-out both}
+.award-sparks{position:absolute;z-index:6;inset:0;overflow:visible;pointer-events:none}
+.award-spark{position:absolute;left:var(--spark-x);width:4px;height:4px;border-radius:50%;background:#fff;
+  box-shadow:0 0 5px 2px rgba(255,244,207,.9),0 0 12px 4px rgba(255,190,90,.7);
+  animation:award-edge-spark .45s ease-out both;animation-delay:var(--spark-delay)}
+.award-spark.top{top:-3px}
+.award-spark.bottom{bottom:-3px}
+.award-revealing .thumb{animation:award-winner-reveal 2.05s cubic-bezier(.2,.75,.25,1) both}
+.award-revealing .who{animation:award-winner-reveal 9s cubic-bezier(.2,.75,.25,1) both}
+.award-revealing .who{animation-delay:.3s}
+@keyframes award-winner-reveal{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+@keyframes award-sparkle-sweep{0%{opacity:0;background-position:120% 0}15%,76%{opacity:1}100%{opacity:0;background-position:-120% 0}}
+@keyframes award-edge-spark{0%{opacity:0;transform:translate(0,0) scale(.35)}18%{opacity:1;transform:translate(0,0) scale(1.2)}100%{opacity:0;transform:translate(var(--spark-dx),var(--spark-dy)) scale(.1)}}
+@media(prefers-reduced-motion:reduce){
+  .award-revealing::after,.award-spark,.award-revealing .thumb,.award-revealing .who{animation:none}
+  .award-revealing .thumb,.award-revealing .who{clip-path:none}
+}
 .award .thumb{position:relative;overflow:hidden;background:linear-gradient(160deg,#1a1d2b,#0d0f17);display:grid;place-items:center}
 .award .thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .award .thumb .sil{position:absolute;bottom:-8%;left:50%;transform:translateX(-50%);width:80%;opacity:.12}
@@ -1547,6 +1567,16 @@ function personHTML(key){
 
 const awardThumb = person => `<div class="thumb ${person.tied?'tied-thumb':''}">${person.photo}</div>`;
 
+function awardSparksHTML(key){
+  if (!revealingAwards.has(key)) return '';
+  return `<span class="award-sparks" aria-hidden="true">${[7,18,30,43,57,70,82,93].map((x,index) => {
+    const delay = (x * 1.6 / 100).toFixed(2);
+    const drift = 9 + (index * 7 % 12);
+    return `<i class="award-spark top" style="--spark-x:${x}%;--spark-delay:${delay}s;--spark-dx:${(index%2 ? -1 : 1)*drift}px;--spark-dy:-${drift}px"></i>
+      <i class="award-spark bottom" style="--spark-x:${x}%;--spark-delay:${delay}s;--spark-dx:${(index%2 ? 1 : -1)*drift}px;--spark-dy:${drift}px"></i>`;
+  }).join('')}</span>`;
+}
+
 function awardControls(key, title){
   if (!isAdmin()) return '';
   const visible = awardVisible(key);
@@ -1566,7 +1596,8 @@ function awardControls(key, title){
 
 function miniCard([key, emo, title]){
   const p = personHTML(key);
-  return `<article class="award mini-card rv ${p.pending?'pending':''}" style="view-transition-name:award-${key}">
+  return `<article class="award mini-card rv ${p.pending?'pending':''} ${awardRevealClass(key)}" style="view-transition-name:award-${key}">
+    ${awardSparksHTML(key)}
     ${awardThumb(p)}
     <div class="txt"><div class="kind">Mención digital</div>
       <h4 class="silver-text"><span class="emo">${emo}</span>${esc(title)}</h4>
@@ -1574,7 +1605,8 @@ function miniCard([key, emo, title]){
 }
 function sashCard([key, emo, title]){
   const p = personHTML(key);
-  return `<article class="award mini-card rv ${p.pending?'pending':''}" style="view-transition-name:award-${key}">
+  return `<article class="award mini-card rv ${p.pending?'pending':''} ${awardRevealClass(key)}" style="view-transition-name:award-${key}">
+    ${awardSparksHTML(key)}
     ${awardThumb(p)}
     <div class="txt"><div class="kind">Mención digital</div>
       <h4 class="silver-text"><span class="emo">${emo}</span>${esc(title)}</h4>
@@ -1582,7 +1614,7 @@ function sashCard([key, emo, title]){
 }
 function fireCard([key, emo, title]){
   const p = personHTML(key);
-  return `<article class="award sash fire rv ${p.pending?'pending':''}" style="view-transition-name:award-${key}"><div class="sash-in">
+  return `<article class="award sash fire rv ${p.pending?'pending':''} ${awardRevealClass(key)}" style="view-transition-name:award-${key}">${awardSparksHTML(key)}<div class="sash-in">
     <span class="ribbon">🔥 BANDA DE HONOR ESPECIAL 🔥</span>
     ${awardThumb(p)}
     <div class="award-badge">${emo}</div>
@@ -1592,7 +1624,8 @@ function fireCard([key, emo, title]){
 }
 function podCard([key, emo, title], cls){
   const p = personHTML(key);
-  return `<article class="award pod ${cls} rv ${p.pending?'pending':''}" style="view-transition-name:award-${key}">
+  return `<article class="award pod ${cls} rv ${p.pending?'pending':''} ${awardRevealClass(key)}" style="view-transition-name:award-${key}">
+    ${awardSparksHTML(key)}
     ${awardThumb(p)}
     <div class="medal">${emo}</div>
     <h4 class="silver-text">${esc(title)}</h4>
@@ -1603,7 +1636,7 @@ function queenCard([key, emo, title]){
   const sparks = Array.from({length:16}, (_, index) =>
     `<i class="sp" style="left:${(index*37+13)%100}%;bottom:${(index*19+7)%40}%;animation-delay:${((index*17)%400/100).toFixed(2)}s;animation-duration:${(3+(index*23)%300/100).toFixed(2)}s"></i>`
   ).join('');
-  return `<article class="award sash queen rv ${p.pending?'pending':''}" style="view-transition-name:award-${key}"><div class="sash-in">
+  return `<article class="award sash queen rv ${p.pending?'pending':''} ${awardRevealClass(key)}" style="view-transition-name:award-${key}">${awardSparksHTML(key)}<div class="sash-in">
     ${sparks}
     <div class="crownbig">${emo}</div>
     <span class="ribbon">✦ LA REINA CORONADA ✦</span>
@@ -1612,6 +1645,10 @@ function queenCard([key, emo, title]){
     <div class="who">${p.who}</div>
     ${awardControls(key,title)}</div></article>`;
 }
+
+let lastPublishedAwards = null;
+let revealingAwards = new Set();
+const awardRevealClass = key => revealingAwards.has(key) ? 'award-revealing' : '';
 
 let ioAwards;
 function observeAwards(){
@@ -1678,6 +1715,11 @@ function renderPremios(force){
   renderIf('premios', sig, () => {
     const admin = isAdmin();
     const allKeys = [...AWARD_BLOCKS.flatMap(block => [...block.mentions,block.sash].map(item => item[0])), ...Object.values(AWARD_FINAL).map(item => item[0])];
+    const publishedAwards = new Set(allKeys.filter(awardPublished));
+    revealingAwards = lastPublishedAwards
+      ? new Set([...publishedAwards].filter(key => !lastPublishedAwards.has(key)))
+      : new Set();
+    lastPublishedAwards = publishedAwards;
     const hasVisibleAwards = allKeys.some(awardVisible);
     $('#adminBar').hidden = !admin;
     $('#banner').hidden = admin || hasVisibleAwards;
@@ -1703,7 +1745,9 @@ function renderPremios(force){
       ${queen ? `<div class="step rv">La reina de la noche</div>${queenCard(AWARD_FINAL.queen)}` : ''}
     </section>` : '';
 
-    updateAwards(html + finalHTML);
+    const updatedHTML = html + finalHTML;
+    revealingAwards = new Set();
+    updateAwards(updatedHTML);
   }, force);
 }
 $('#demoBtn').addEventListener('click', async () => {
