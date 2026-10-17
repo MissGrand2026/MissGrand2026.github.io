@@ -201,6 +201,15 @@ details.dr ol{margin:0 0 12px;padding-left:20px;font-size:.8rem;line-height:1.55
 .rv{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s ease}
 .rv.in{opacity:1;transform:none}
 
+::view-transition-old(*){animation:award-fade-out .18s ease both}
+::view-transition-new(*){animation:award-fade-in .24s ease both}
+::view-transition-old(root),::view-transition-new(root){animation:none}
+@keyframes award-fade-out{to{opacity:0}}
+@keyframes award-fade-in{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){
+  ::view-transition-old(*),::view-transition-new(*){animation:none}
+}
+
 .award{position:relative;border-radius:20px;border:1px solid var(--line);background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 8px 28px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.08);transition:transform .3s,box-shadow .3s,border-color .3s}
 .award:hover,.award:active{transform:translateY(-4px);border-color:rgba(255,255,255,.55);box-shadow:0 14px 36px rgba(0,0,0,.55),0 0 28px rgba(224,230,237,.25)}
 .award .thumb{position:relative;overflow:hidden;background:linear-gradient(160deg,#1a1d2b,#0d0f17);display:grid;place-items:center}
@@ -1557,7 +1566,7 @@ function awardControls(key, title){
 
 function miniCard([key, emo, title]){
   const p = personHTML(key);
-  return `<article class="award mini-card rv ${p.pending?'pending':''}">
+  return `<article class="award mini-card rv ${p.pending?'pending':''}" style="view-transition-name:award-${key}">
     ${awardThumb(p)}
     <div class="txt"><div class="kind">Mención digital</div>
       <h4 class="silver-text"><span class="emo">${emo}</span>${esc(title)}</h4>
@@ -1565,7 +1574,7 @@ function miniCard([key, emo, title]){
 }
 function sashCard([key, emo, title]){
   const p = personHTML(key);
-  return `<article class="award mini-card rv ${p.pending?'pending':''}">
+  return `<article class="award mini-card rv ${p.pending?'pending':''}" style="view-transition-name:award-${key}">
     ${awardThumb(p)}
     <div class="txt"><div class="kind">Mención digital</div>
       <h4 class="silver-text"><span class="emo">${emo}</span>${esc(title)}</h4>
@@ -1573,7 +1582,7 @@ function sashCard([key, emo, title]){
 }
 function fireCard([key, emo, title]){
   const p = personHTML(key);
-  return `<article class="award sash fire rv ${p.pending?'pending':''}"><div class="sash-in">
+  return `<article class="award sash fire rv ${p.pending?'pending':''}" style="view-transition-name:award-${key}"><div class="sash-in">
     <span class="ribbon">🔥 BANDA DE HONOR ESPECIAL 🔥</span>
     ${awardThumb(p)}
     <div class="award-badge">${emo}</div>
@@ -1583,7 +1592,7 @@ function fireCard([key, emo, title]){
 }
 function podCard([key, emo, title], cls){
   const p = personHTML(key);
-  return `<article class="award pod ${cls} rv ${p.pending?'pending':''}">
+  return `<article class="award pod ${cls} rv ${p.pending?'pending':''}" style="view-transition-name:award-${key}">
     ${awardThumb(p)}
     <div class="medal">${emo}</div>
     <h4 class="silver-text">${esc(title)}</h4>
@@ -1591,8 +1600,10 @@ function podCard([key, emo, title], cls){
 }
 function queenCard([key, emo, title]){
   const p = personHTML(key);
-  const sparks = Array.from({length:16}, () => `<i class="sp" style="left:${Math.random()*100}%;bottom:${Math.random()*40}%;animation-delay:${(Math.random()*4).toFixed(2)}s;animation-duration:${(3+Math.random()*3).toFixed(2)}s"></i>`).join('');
-  return `<article class="award sash queen rv ${p.pending?'pending':''}"><div class="sash-in">
+  const sparks = Array.from({length:16}, (_, index) =>
+    `<i class="sp" style="left:${(index*37+13)%100}%;bottom:${(index*19+7)%40}%;animation-delay:${((index*17)%400/100).toFixed(2)}s;animation-duration:${(3+(index*23)%300/100).toFixed(2)}s"></i>`
+  ).join('');
+  return `<article class="award sash queen rv ${p.pending?'pending':''}" style="view-transition-name:award-${key}"><div class="sash-in">
     ${sparks}
     <div class="crownbig">${emo}</div>
     <span class="ribbon">✦ LA REINA CORONADA ✦</span>
@@ -1609,6 +1620,58 @@ function observeAwards(){
   ioAwards = ioAwards || new IntersectionObserver(es => es.forEach(x => { if (x.isIntersecting){ x.target.classList.add('in'); ioAwards.unobserve(x.target); } }), {threshold:.15});
   els.forEach(e => ioAwards.observe(e));
 }
+
+function updateAwards(html){
+  const root = $('#premiosRoot');
+  if (root.innerHTML === html) return;
+  const visibleItems = new Set($$('#premiosRoot .rv.in').map(item =>
+    item.style.viewTransitionName || item.textContent.trim()
+  ));
+  const update = () => {
+    ioAwards?.disconnect();
+    ioAwards = null;
+    root.innerHTML = html;
+    $$('#premiosRoot .rv').forEach(item => {
+      const key = item.style.viewTransitionName || item.textContent.trim();
+      if (visibleItems.has(key)) item.classList.add('in');
+    });
+    observeAwards();
+  };
+  if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches){
+    document.startViewTransition(update);
+  }else{
+    update();
+  }
+}
+
+$('#premiosRoot').addEventListener('click', async event => {
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+  const button = target.closest('[data-visible-award], [data-publish-award]');
+  if (!button || button.disabled) return;
+
+  const visibility = button.hasAttribute('data-visible-award');
+  const key = visibility ? button.dataset.visibleAward : button.dataset.publishAward;
+  const next = visibility ? !awardVisible(key) : !awardPublished(key);
+  if (!visibility && next && (!awardVisible(key) || !awardWinnerIds(key).length)) return;
+
+  button.classList.toggle('on', next);
+  button.setAttribute('aria-checked', String(next));
+  button.disabled = true;
+  try{
+    const setting = visibility ? 'awardVisible' : 'awardPublished';
+    await DB.set('/config/' + setting + '/' + key, next);
+    await sync(true);
+    if (visibility) toast(next ? 'Premio visible para las candidatas' : 'Premio oculto para las candidatas');
+    else toast(next ? 'Ganadora publicada' : 'Ganadora oculta');
+  }catch(error){
+    console.error(visibility ? 'No se pudo cambiar la visibilidad del premio:' : 'No se pudo cambiar la publicación del premio:', error);
+    toast(visibility ? 'No se pudo cambiar la visibilidad del premio' : 'No se pudo cambiar la publicación');
+    button.classList.toggle('on', !next);
+    button.setAttribute('aria-checked', String(!next));
+    button.disabled = false;
+  }
+});
 
 function renderPremios(force){
   const sig = JSON.stringify([isAdmin(), DATA.config || {}, DATA.votes || {}, cands().map(c => c.id+c.name+c.country+(c.photo||'').slice(-8))]);
@@ -1640,38 +1703,7 @@ function renderPremios(force){
       ${queen ? `<div class="step rv">La reina de la noche</div>${queenCard(AWARD_FINAL.queen)}` : ''}
     </section>` : '';
 
-    $('#premiosRoot').innerHTML = html + finalHTML;
-    observeAwards();
-
-    $$('#premiosRoot [data-visible-award]').forEach(button => button.addEventListener('click', async () => {
-      const key = button.dataset.visibleAward;
-      const next = !awardVisible(key);
-      button.disabled = true;
-      try{
-        await DB.set('/config/awardVisible/' + key, next);
-        await sync(true);
-        toast(next ? 'Premio visible para las candidatas' : 'Premio oculto para las candidatas');
-      }catch(error){
-        console.error('No se pudo cambiar la visibilidad del premio:', error);
-        toast('No se pudo cambiar la visibilidad del premio');
-        button.disabled = false;
-      }
-    }));
-    $$('#premiosRoot [data-publish-award]').forEach(button => button.addEventListener('click', async () => {
-      const key = button.dataset.publishAward;
-      const next = !awardPublished(key);
-      if (next && (!awardVisible(key) || !awardWinnerIds(key).length)) return;
-      button.disabled = true;
-      try{
-        await DB.set('/config/awardPublished/' + key, next);
-        await sync(true);
-        toast(next ? 'Ganadora publicada' : 'Ganadora oculta');
-      }catch(error){
-        console.error('No se pudo cambiar la publicación del premio:', error);
-        toast('No se pudo cambiar la publicación');
-        button.disabled = false;
-      }
-    }));
+    updateAwards(html + finalHTML);
   }, force);
 }
 $('#demoBtn').addEventListener('click', async () => {
