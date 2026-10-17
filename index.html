@@ -172,7 +172,6 @@ details.dr ol{margin:0 0 12px;padding-left:20px;font-size:.8rem;line-height:1.55
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
 .chip{font-size:.68rem;padding:4px 9px;border-radius:99px;border:1px solid var(--line);background:rgba(255,255,255,.05)}
 .cat-t{font-size:.72rem;color:var(--steel);margin:8px 0 6px;letter-spacing:.05em}
-
 /* ===== Premios & Cuadro de Honor ===== */
 .banner{margin:0 0 16px;padding:14px;text-align:center;border-radius:16px;border:1px solid var(--line);background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);font-size:.8rem;color:var(--steel);letter-spacing:.04em}
 .adminbar{position:relative;margin:0 0 6px;padding:14px;border-radius:18px;background:rgba(18,20,29,.72);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(224,230,237,.3);box-shadow:0 8px 30px rgba(0,0,0,.5)}
@@ -438,7 +437,7 @@ footer{text-align:center;margin-top:34px}
       <div class="glass">
         <h3 style="font-size:.95rem;letter-spacing:.14em;margin-bottom:12px">Resultados en vivo</h3>
         <div id="adminResults"></div>
-        <button class="btn ghost" id="resetVotes" type="button">Borrar todos los votos (pruebas)</button>
+        <button class="btn ghost" id="resetVotes" type="button">Borrar todos los votos</button>
       </div>
 
       <div class="glass">
@@ -1876,10 +1875,12 @@ function drawResults(){
     h += `<p class="cat-t" style="margin-top:16px">Desglose por categoría</p>`;
     Object.keys(VOTE_BLOCKS).forEach(b => {
       h += `<details class="dr" data-k="${b}" ${openKeys.includes(b)?'open':''}><summary>${esc(VOTE_BLOCKS[b].title)}</summary>` +
+        `<button class="mini danger" type="button" data-clear-block="${b}" aria-label="Borrar todos los votos de ${esc(VOTE_BLOCKS[b].title)}">Borrar votos del bloque</button>` +
         VOTE_BLOCKS[b].cats.map((c,i) => {
           const m = cat[b+'_'+i] || {};
           const chips = cs.filter(x => m[x.id]).sort((a,z) => m[z.id]-m[a.id]).map(x => `<span class="chip">${esc(x.name)} · <b>${m[x.id]}</b></span>`).join('');
-          return `<div class="cat-t">${esc(c[0])}${c[2] ? ' ('+esc(c[2])+')' : ''}</div><div class="chips">${chips || '<span class="chip">Sin votos</span>'}</div>`;
+          return `<div class="cat-t">${esc(c[0])}${c[2] ? ' ('+esc(c[2])+')' : ''}</div>
+            <div class="chips">${chips || '<span class="chip">Sin votos</span>'}</div>`;
         }).join('') + `</details>`;
     });
     const exceptionalCounts = cat.final_0 || {};
@@ -1888,10 +1889,28 @@ function drawResults(){
       .map(candidate => `<span class="chip">${esc(candidate.name)} · <b>${exceptionalCounts[candidate.id]}</b></span>`)
       .join('');
     h += `<details class="dr" data-k="final" ${openKeys.includes('final')?'open':''}><summary>${esc(FINAL_TIE_VOTE.title)}</summary>
+      <button class="mini danger" type="button" data-clear-block="${FINAL_TIE_BLOCK}" aria-label="Borrar todos los votos de ${esc(FINAL_TIE_VOTE.title)}">Borrar votos del bloque</button>
       <div class="cat-t">${esc(FINAL_TIE_VOTE.cats[0][0])}</div>
       <div class="chips">${exceptionalChips || '<span class="chip">Sin votos</span>'}</div></details>`;
   }
   $('#adminResults').innerHTML = h;
+  $$('#adminResults [data-clear-block]').forEach(button => button.addEventListener('click', async () => {
+    const block = button.dataset.clearBlock;
+    const title = block === FINAL_TIE_BLOCK ? FINAL_TIE_VOTE.title : VOTE_BLOCKS[block] && VOTE_BLOCKS[block].title;
+    if (!title) return;
+    if (!confirm(`Se borrarán todos los votos del bloque «${title}». Los votos de los demás bloques se conservarán. ¿Continuar?`)) return;
+    button.disabled = true;
+    try{
+      await DB.set('/votes/' + block, null);
+      await DB.set('/config/epoch', epoch() + 1);
+      const updated = await sync(true);
+      toast(updated ? `Votos del bloque «${title}» borrados` : 'Votos borrados, pero no se pudieron actualizar los resultados');
+    }catch(error){
+      console.error(`No se pudieron borrar los votos del bloque «${title}»:`, error);
+      toast(`No se pudieron borrar los votos del bloque «${title}»: ${error.message}`);
+      button.disabled = false;
+    }
+  }));
 }
 $('#resetVotes').addEventListener('click', async () => {
   if (!confirm('Se borrarán TODOS los votos y todos podrán volver a votar. ¿Continuar?')) return;
